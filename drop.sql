@@ -24,9 +24,6 @@ CREATE  TABLE players (
 	CONSTRAINT unq_players_group UNIQUE ( group_id ) 
  );
 
-CREATE  TABLE tbl ( 
- );
-
 CREATE  TABLE tournaments ( 
 	id                   integer  NOT NULL  ,
 	name                 varchar  NOT NULL  ,
