@@ -1,6 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS pawntodb4;
-
-CREATE  TABLE pawntodb4.pairings ( 
+CREATE  TABLE pairings ( 
 	id                   integer  NOT NULL  ,
 	white                integer  NOT NULL  ,
 	black                integer  NOT NULL  ,
@@ -15,7 +13,7 @@ CREATE  TABLE pawntodb4.pairings (
 	CONSTRAINT unq_games_id_record UNIQUE ( id_record ) 
  );
 
-CREATE  TABLE pawntodb4.players ( 
+CREATE  TABLE players ( 
 	id                   integer  NOT NULL  ,
 	first_name           varchar    ,
 	last_name            varchar    ,
@@ -26,7 +24,10 @@ CREATE  TABLE pawntodb4.players (
 	CONSTRAINT unq_players_group UNIQUE ( group_id ) 
  );
 
-CREATE  TABLE pawntodb4.tournaments ( 
+CREATE  TABLE tbl ( 
+ );
+
+CREATE  TABLE tournaments ( 
 	id                   integer  NOT NULL  ,
 	name                 varchar  NOT NULL  ,
 	"type"               integer  NOT NULL  ,
@@ -38,14 +39,14 @@ CREATE  TABLE pawntodb4.tournaments (
 	CONSTRAINT unq_tournaments_place UNIQUE ( place ) 
  );
 
-CREATE  TABLE pawntodb4."type" ( 
+CREATE  TABLE "type" ( 
 	id                   integer  NOT NULL  ,
 	name                 varchar    ,
 	number_of_players    integer    ,
 	CONSTRAINT pk_type PRIMARY KEY ( id )
  );
 
-CREATE  TABLE pawntodb4.game_record ( 
+CREATE  TABLE game_record ( 
 	id                   integer  NOT NULL  ,
 	id_record            integer    ,
 	id_opening           integer  NOT NULL  ,
@@ -56,33 +57,33 @@ CREATE  TABLE pawntodb4.game_record (
 	CONSTRAINT unq_game_record_id_ending UNIQUE ( ending ) 
  );
 
-CREATE  TABLE pawntodb4.groups ( 
+CREATE  TABLE groups ( 
 	id                   integer  NOT NULL  ,
 	group_name           varchar    ,
 	CONSTRAINT pk_groups PRIMARY KEY ( id )
  );
 
-CREATE  TABLE pawntodb4.move_record ( 
+CREATE  TABLE move_record ( 
 	id                   integer  NOT NULL  ,
 	record               varchar    ,
 	CONSTRAINT pk_tbl PRIMARY KEY ( id )
  );
 
-CREATE  TABLE pawntodb4.openings ( 
+CREATE  TABLE openings ( 
 	id                   integer  NOT NULL  ,
 	first_move           varchar(2)    ,
 	name                 varchar(100)    ,
 	CONSTRAINT pk_openings PRIMARY KEY ( id )
  );
 
-CREATE  TABLE pawntodb4.pairing_tournament ( 
+CREATE  TABLE pairing_tournament ( 
 	pairing_id           integer  NOT NULL  ,
 	tournament_id        integer  NOT NULL  ,
 	"level"              integer  NOT NULL  ,
 	CONSTRAINT unq_pairing_tournament_pairing_id UNIQUE ( pairing_id ) 
  );
 
-CREATE  TABLE pawntodb4.places ( 
+CREATE  TABLE places ( 
 	id                   integer  NOT NULL  ,
 	city                 integer  NOT NULL  ,
 	street               varchar(100)    ,
@@ -90,40 +91,32 @@ CREATE  TABLE pawntodb4.places (
 	CONSTRAINT pk_places PRIMARY KEY ( id )
  );
 
-CREATE  TABLE pawntodb4.player_tournament ( 
+CREATE  TABLE player_tournament ( 
 	player_id            integer  NOT NULL  ,
 	tournament_id        integer  NOT NULL  
  );
 
-CREATE  TABLE pawntodb4.records ( 
-	id                   integer  NOT NULL  ,
-	game                 text    ,
-	CONSTRAINT pk_records PRIMARY KEY ( id )
- );
+ALTER TABLE game_record ADD CONSTRAINT fk_game_record_pairings FOREIGN KEY ( id ) REFERENCES pairings( id_record );
 
-ALTER TABLE pawntodb4.game_record ADD CONSTRAINT fk_game_record_pairings FOREIGN KEY ( id ) REFERENCES pawntodb4.pairings( id_record );
+ALTER TABLE groups ADD CONSTRAINT fk_groups_players FOREIGN KEY ( id ) REFERENCES players( group_id );
 
-ALTER TABLE pawntodb4.groups ADD CONSTRAINT fk_groups_players FOREIGN KEY ( id ) REFERENCES pawntodb4.players( group_id );
+ALTER TABLE move_record ADD CONSTRAINT fk_recordss_game_record FOREIGN KEY ( id ) REFERENCES game_record( id_record );
 
-ALTER TABLE pawntodb4.move_record ADD CONSTRAINT fk_recordss_game_record FOREIGN KEY ( id ) REFERENCES pawntodb4.game_record( id_record );
+ALTER TABLE openings ADD CONSTRAINT fk_openings_game_record FOREIGN KEY ( id ) REFERENCES game_record( id_opening );
 
-ALTER TABLE pawntodb4.openings ADD CONSTRAINT fk_openings_game_record FOREIGN KEY ( id ) REFERENCES pawntodb4.game_record( id_opening );
+ALTER TABLE pairing_tournament ADD CONSTRAINT fk_pairing_tournament_tournaments FOREIGN KEY ( tournament_id ) REFERENCES tournaments( id );
 
-ALTER TABLE pawntodb4.pairing_tournament ADD CONSTRAINT fk_pairing_tournament_tournaments FOREIGN KEY ( tournament_id ) REFERENCES pawntodb4.tournaments( id );
+ALTER TABLE pairing_tournament ADD CONSTRAINT fk_pairing_tournament_games FOREIGN KEY ( pairing_id ) REFERENCES pairings( id );
 
-ALTER TABLE pawntodb4.pairing_tournament ADD CONSTRAINT fk_pairing_tournament_games FOREIGN KEY ( pairing_id ) REFERENCES pawntodb4.pairings( id );
+ALTER TABLE places ADD CONSTRAINT fk_places_tournaments FOREIGN KEY ( id ) REFERENCES tournaments( place );
 
-ALTER TABLE pawntodb4.places ADD CONSTRAINT fk_places_tournaments FOREIGN KEY ( id ) REFERENCES pawntodb4.tournaments( place );
+ALTER TABLE player_tournament ADD CONSTRAINT fk_player_tournament_players FOREIGN KEY ( player_id ) REFERENCES players( id );
 
-ALTER TABLE pawntodb4.player_tournament ADD CONSTRAINT fk_player_tournament_players FOREIGN KEY ( player_id ) REFERENCES pawntodb4.players( id );
+ALTER TABLE player_tournament ADD CONSTRAINT fk_player_tournament_tournaments FOREIGN KEY ( tournament_id ) REFERENCES tournaments( id );
 
-ALTER TABLE pawntodb4.player_tournament ADD CONSTRAINT fk_player_tournament_tournaments FOREIGN KEY ( tournament_id ) REFERENCES pawntodb4.tournaments( id );
+ALTER TABLE players ADD CONSTRAINT fk_players_games_white FOREIGN KEY ( id ) REFERENCES pairings( white );
 
-ALTER TABLE pawntodb4.players ADD CONSTRAINT fk_players_games_white FOREIGN KEY ( id ) REFERENCES pawntodb4.pairings( white );
+ALTER TABLE players ADD CONSTRAINT fk_players_games_black FOREIGN KEY ( id ) REFERENCES pairings( black );
 
-ALTER TABLE pawntodb4.players ADD CONSTRAINT fk_players_games_black FOREIGN KEY ( id ) REFERENCES pawntodb4.pairings( black );
-
-ALTER TABLE pawntodb4.records ADD CONSTRAINT fk_records_game_record FOREIGN KEY ( id ) REFERENCES pawntodb4.game_record( id_record );
-
-ALTER TABLE pawntodb4."type" ADD CONSTRAINT fk_type_tournaments FOREIGN KEY ( id ) REFERENCES pawntodb4.tournaments( "type" );
+ALTER TABLE "type" ADD CONSTRAINT fk_type_tournaments FOREIGN KEY ( id ) REFERENCES tournaments( "type" );
 
