@@ -1,119 +1,87 @@
-CREATE  TABLE pairings ( 
-	id                   integer  NOT NULL  ,
-	white                integer  NOT NULL  ,
-	black                integer  NOT NULL  ,
-	tournament_id        integer    ,
-	"result"             boolean  NOT NULL  ,
-	"date"               date    ,
-	id_record            integer    ,
-	CONSTRAINT unq_games_white UNIQUE ( white ) ,
-	CONSTRAINT unq_games_black UNIQUE ( black ) ,
-	CONSTRAINT pk_games PRIMARY KEY ( id ),
-	CONSTRAINT unq_games_tournament_id UNIQUE ( tournament_id ) ,
-	CONSTRAINT unq_games_id_record UNIQUE ( id_record ) 
- );
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS players CASCADE;
+DROP TABLE IF EXISTS types CASCADE;
+DROP TABLE IF EXISTS places CASCADE;
+DROP TABLE IF EXISTS tournaments CASCADE;
+DROP TABLE IF EXISTS move_record CASCADE;
+DROP TABLE IF EXISTS openings CASCADE;
+DROP TABLE IF EXISTS game_record CASCADE;
+DROP TABLE IF EXISTS pairings CASCADE;
+DROP TABLE IF EXISTS pairing_tournament CASCADE;
+DROP TABLE IF EXISTS player_tournament CASCADE;
 
-CREATE  TABLE players ( 
-	id                   integer  NOT NULL  ,
-	first_name           varchar    ,
-	last_name            varchar    ,
-	group_id             integer    ,
-	elo                  integer    ,
-	max_elo              integer    ,
-	CONSTRAINT pk_players PRIMARY KEY ( id ),
-	CONSTRAINT unq_players_group UNIQUE ( group_id ) 
- );
+CREATE TABLE groups(
+    id integer PRIMARY KEY,
+    group_name varchar UNIQUE NOT NULL
+);
+CREATE TABLE players(
+    id integer PRIMARY KEY,
+    first_name varchar(40) NOT NULL, 
+    last_name varchar(40) NOT NULL,
+    group_id integer REFERENCES groups,
+    elo integer check(elo > 0 and elo < 5000),
+    max_elo integer check(max_elo >= elo)
+);
 
-CREATE  TABLE tournaments ( 
-	id                   integer  NOT NULL  ,
-	name                 varchar  NOT NULL  ,
-	"type"               integer  NOT NULL  ,
-	place                integer    ,
-	start_date           date  NOT NULL  ,
-	end_date             date  NOT NULL  ,
-	CONSTRAINT pk_tournaments PRIMARY KEY ( id ),
-	CONSTRAINT unq_tournaments_type UNIQUE ( "type" ) ,
-	CONSTRAINT unq_tournaments_place UNIQUE ( place ) 
- );
+CREATE TABLE types(
+    id integer PRIMARY KEY,
+    name varchar(40) NOT NULL,
+    number_of_players integer NOT NULL
+);
+CREATE TABLE places(
+    id integer PRIMARY KEY,
+    city varchar(50) NOT NULL,
+    street varchar(100),
+    street_number integer
+);
 
-CREATE  TABLE "type" ( 
-	id                   integer  NOT NULL  ,
-	name                 varchar    ,
-	number_of_players    integer    ,
-	CONSTRAINT pk_type PRIMARY KEY ( id )
- );
+CREATE TABLE tournaments(
+    id integer PRIMARY KEY,
+    "name" varchar NOT NULL,
+    "type" integer NOT NULL REFERENCES types,
+    place integer REFERENCES places,
+    "start_date" date NOT NULL,
+    "end_date" date NOT NULL,
+    check(start_date < end_date)
+);
+CREATE TABLE move_record(
+    id integer PRIMARY KEY,
+    record varchar NOT NULL
+);
 
-CREATE  TABLE game_record ( 
-	id                   integer  NOT NULL  ,
-	id_record            integer    ,
-	id_opening           integer  NOT NULL  ,
-	ending               varchar    ,
-	CONSTRAINT pk_game_record PRIMARY KEY ( id ),
-	CONSTRAINT unq_game_record_id_opening UNIQUE ( id_opening ) ,
-	CONSTRAINT unq_game_record_id_record UNIQUE ( id_record ) ,
-	CONSTRAINT unq_game_record_id_ending UNIQUE ( ending ) 
- );
+CREATE TABLE openings(
+    id integer PRIMARY KEY,
+    first_move varchar(3),
+    name varchar(100) UNIQUE NOT NULL
+);
 
-CREATE  TABLE groups ( 
-	id                   integer  NOT NULL  ,
-	group_name           varchar    ,
-	CONSTRAINT pk_groups PRIMARY KEY ( id )
- );
 
-CREATE  TABLE move_record ( 
-	id                   integer  NOT NULL  ,
-	record               varchar    ,
-	CONSTRAINT pk_tbl PRIMARY KEY ( id )
- );
+CREATE TABLE game_record(
+    id integer PRIMARY KEY,
+    id_record integer REFERENCES move_record,
+    id_opening integer REFERENCES openings,
+    ending integer NOT NULL CHECK(ending in(1, 0, -1)),
+    UNIQUE(id_record)
+);
 
-CREATE  TABLE openings ( 
-	id                   integer  NOT NULL  ,
-	first_move           varchar(2)    ,
-	name                 varchar(100)    ,
-	CONSTRAINT pk_openings PRIMARY KEY ( id )
- );
 
-CREATE  TABLE pairing_tournament ( 
-	pairing_id           integer  NOT NULL  ,
-	tournament_id        integer  NOT NULL  ,
-	"level"              integer  NOT NULL  ,
-	CONSTRAINT unq_pairing_tournament_pairing_id UNIQUE ( pairing_id ) 
- );
+CREATE TABLE pairings(
+    id integer PRIMARY KEY,
+    white integer NOT NULL REFERENCES players,
+    black integer NOT NULL REFERENCES players,
+    tournament_id integer REFERENCES tournaments,
+    "result" integer NOT NULL CHECK(result in(1, 0, -1)),
+    "date"   date,
+    id_record integer REFERENCES game_record
+);
 
-CREATE  TABLE places ( 
-	id                   integer  NOT NULL  ,
-	city                 integer  NOT NULL  ,
-	street               varchar(100)    ,
-	street_number        integer    ,
-	CONSTRAINT pk_places PRIMARY KEY ( id )
- );
+CREATE TABLE pairing_tournament(
+    pairing_id integer UNIQUE NOT NULL REFERENCES pairings,
+    tournament_id integer NOT NULL REFERENCES tournaments,
+    rank integer
+);
 
-CREATE  TABLE player_tournament ( 
-	player_id            integer  NOT NULL  ,
-	tournament_id        integer  NOT NULL  
- );
-
-ALTER TABLE game_record ADD CONSTRAINT fk_game_record_pairings FOREIGN KEY ( id ) REFERENCES pairings( id_record );
-
-ALTER TABLE groups ADD CONSTRAINT fk_groups_players FOREIGN KEY ( id ) REFERENCES players( group_id );
-
-ALTER TABLE move_record ADD CONSTRAINT fk_recordss_game_record FOREIGN KEY ( id ) REFERENCES game_record( id_record );
-
-ALTER TABLE openings ADD CONSTRAINT fk_openings_game_record FOREIGN KEY ( id ) REFERENCES game_record( id_opening );
-
-ALTER TABLE pairing_tournament ADD CONSTRAINT fk_pairing_tournament_tournaments FOREIGN KEY ( tournament_id ) REFERENCES tournaments( id );
-
-ALTER TABLE pairing_tournament ADD CONSTRAINT fk_pairing_tournament_games FOREIGN KEY ( pairing_id ) REFERENCES pairings( id );
-
-ALTER TABLE places ADD CONSTRAINT fk_places_tournaments FOREIGN KEY ( id ) REFERENCES tournaments( place );
-
-ALTER TABLE player_tournament ADD CONSTRAINT fk_player_tournament_players FOREIGN KEY ( player_id ) REFERENCES players( id );
-
-ALTER TABLE player_tournament ADD CONSTRAINT fk_player_tournament_tournaments FOREIGN KEY ( tournament_id ) REFERENCES tournaments( id );
-
-ALTER TABLE players ADD CONSTRAINT fk_players_games_white FOREIGN KEY ( id ) REFERENCES pairings( white );
-
-ALTER TABLE players ADD CONSTRAINT fk_players_games_black FOREIGN KEY ( id ) REFERENCES pairings( black );
-
-ALTER TABLE "type" ADD CONSTRAINT fk_type_tournaments FOREIGN KEY ( id ) REFERENCES tournaments( "type" );
-
+CREATE TABLE player_tournament(
+    player_id integer NOT NULL REFERENCES players,
+    tournament_id integer NOT NULL REFERENCES tournaments
+);
