@@ -9,6 +9,9 @@ DROP TABLE IF EXISTS game_record CASCADE;
 DROP TABLE IF EXISTS pairings CASCADE;
 DROP TABLE IF EXISTS pairing_tournament CASCADE;
 DROP TABLE IF EXISTS player_tournament CASCADE;
+DROP TYPE IF EXISTS match_result;
+
+CREATE TYPE match_result AS ENUM('white', 'black', 'draw');
 
 CREATE TABLE groups(
     id integer PRIMARY KEY,
@@ -60,7 +63,8 @@ CREATE TABLE game_record(
     id integer PRIMARY KEY,
     id_record integer REFERENCES move_record,
     id_opening integer REFERENCES openings,
-    ending integer NOT NULL CHECK(ending in(1, 0, -1)),
+    game_result match_result NOT NULL,
+    ending varchar,
     UNIQUE(id_record)
 );
 
@@ -70,7 +74,7 @@ CREATE TABLE pairings(
     white integer NOT NULL REFERENCES players,
     black integer NOT NULL REFERENCES players,
     tournament_id integer REFERENCES tournaments,
-    "result" integer NOT NULL CHECK(result in(1, 0, -1)),
+    "result" match_result NOT NULL,
     "date"   date,
     id_record integer REFERENCES game_record
 );
