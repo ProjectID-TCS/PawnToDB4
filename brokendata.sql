@@ -482,7 +482,7 @@ COPY PTDB4.pairings (id, white, black, result, "date") from stdin;
 309	28	31	black	2022-06-15
 \.
 
-COPY move_record (id, record) from stdin;
+COPY PTDB4.move_record (id, record) from stdin;
 1	1. f4 d5 2. Nf3 g6 3. g3 Bg7 4. Bg2 Nf6 5. O-O O-O 6. d3 c5 7. c3 Nc6 8. Na3 Rb8 9. Ne5 Nxe5 10. fxe5 Ne8
 2	1. e4 h5 2. h4 g6 3. d4 Bg7 4. Nc3 d6 5. Be3 a6 6. Qd2 b5 7. f3 Nd7 8. Nh3 Bb7 9. O-O-O Rc8 10. Ng5 c5
 3	1. e4 c5 2. Nf3 d6 3. d4 Nf6 4. dxc5 Qa5+ 5. Nc3 Qxc5 6. Be3 Qa5 7. Qd2 Nc6 8. h3 g6 9. Bd3 Bg7 10. O-O O-O
@@ -494,7 +494,7 @@ COPY move_record (id, record) from stdin;
 9	1. d4 f5 2. c4 Nf6 3. g3 e6 4. Bg2 Be7 5. Nf3 O-O 6. O-O Ne4 7. Nbd2 Bf6 8. Qc2 d5 9. b3 c5 10. cxd5 exd5
 \.
 
-COPY game_record (id, id_record, game_result) from stdin;
+COPY PTDB4.game_record (id, id_record, game_result) from stdin;
 1	9	white
 2	8	white
 3	7	draw
@@ -505,7 +505,7 @@ COPY game_record (id, id_record, game_result) from stdin;
 8	2	draw
 \.
 
-COPY pairings (id, white, black, result, date, id_record) from stdin;
+COPY PTDB4.pairings (id, white, black, result, date, id_record) from stdin;
 350	89	130	white	2022-08-17	1
 351	149	61	white	2022-08-17	2
 352	21	39	draw	2022-08-17	3
