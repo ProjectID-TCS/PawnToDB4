@@ -20,10 +20,11 @@ CREATE TABLE PTDB4.players(
 CREATE TABLE PTDB4.types(
     id integer PRIMARY KEY,
     name varchar(40) NOT NULL,
-    number_of_players integer NOT NULL
+    description varchar(200)
 );
 CREATE TABLE PTDB4.places(
     id integer PRIMARY KEY,
+    country varchar(50) NOT NULL,
     city varchar(50) NOT NULL,
     street varchar(100),
     street_number integer
