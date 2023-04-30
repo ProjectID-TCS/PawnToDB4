@@ -5,7 +5,7 @@ CREATE SCHEMA PTDB4;
 CREATE TYPE PTDB4.match_result AS ENUM('white', 'black', 'draw');
 
 CREATE TABLE PTDB4.groups(
-    id integer PRIMARY KEY,
+	 id integer PRIMARY KEY,
     group_name varchar UNIQUE NOT NULL
 );
 CREATE TABLE PTDB4.players(
@@ -594,12 +594,12 @@ COPY PTDB4.pairings (id, white, black, result, date, id_record) from stdin;
 357	105	70	black	2022-08-17	8
 \.
 
-COPY PTDB4.types (id, name, number_of_players) FROM stdin;
-1   Double Round Robin  
-2   Single Round Robin
-3   Swiss System
-4   Single Elimination
-5   Scheveningen System
+COPY PTDB4.types (id, name ) FROM stdin;
+1	Double Round Robin
+2	Single Round Robin
+3	Swiss System
+4	Single Elimination
+5	Scheveningen System
 \.
 
 COPY PTDB4.openings (id, first_moves, name) FROM stdin;
@@ -622,12 +622,12 @@ COPY PTDB4.places (id, country, city, street, street_number) FROM stdin;
 \.
 
 COPY PTDB4.tournaments (id, name, type, place, start_date, end_date) FROM stdin;
-1	TCS Cup	1	2019.04.30	2023.05.12
-2	Weird Tournament	4	2021.03.12	2022.12.17
+1	TCS Cup	1	3	2019.04.30	2023.05.12
+2	Weird Tournament	4	1	2021.03.12	2022.12.17
 \.
 
-COPY PTDB4.pairing_tournament (player_id, tournament_id) FROM stdin;
-1	1
+COPY PTDB4.pairing_tournament (pairing_id, tournament_id) FROM stdin;
+11	1
 14	1
 16	1
 60	1
@@ -635,7 +635,7 @@ COPY PTDB4.pairing_tournament (player_id, tournament_id) FROM stdin;
 41	1
 100	1
 34	1
-3	2
+37	2
 52	2
 63	2
 123	2
