@@ -46,7 +46,7 @@ CREATE TABLE PTDB4.move_record(
 
 CREATE TABLE PTDB4.openings(
     id integer PRIMARY KEY,
-    first_move varchar(3),
+    first_moves varchar(10),
     name varchar(100) UNIQUE NOT NULL
 );
 
