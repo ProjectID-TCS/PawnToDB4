@@ -2,83 +2,123 @@ DROP SCHEMA IF EXISTS PTDB4 CASCADE;
 
 CREATE SCHEMA PTDB4;
 
-CREATE TYPE PTDB4.match_result AS ENUM('white', 'black', 'draw');
+CREATE TYPE PTDB4.match_result AS ENUM ('W', 'B', 'D');
 
-CREATE TABLE PTDB4.groups(
-	 id integer PRIMARY KEY,
+CREATE TABLE PTDB4.groups
+(
+    id         serial PRIMARY KEY,
     group_name varchar UNIQUE NOT NULL
 );
-CREATE TABLE PTDB4.players(
-    id integer PRIMARY KEY,
-    first_name varchar(40) NOT NULL, 
-    last_name varchar(40) NOT NULL,
-    group_id integer REFERENCES ptdb4.groups,
-    elo integer check(elo > 0 and elo < 5000),
-    max_elo integer check(max_elo >= elo)
+
+CREATE TABLE PTDB4.players
+(
+    id         serial PRIMARY KEY,
+    first_name varchar(20) NOT NULL,
+    last_name  varchar(20) NOT NULL,
+    group_id   integer REFERENCES ptdb4.groups
 );
 
-CREATE TABLE PTDB4.types(
-    id integer PRIMARY KEY,
-    name varchar(40) NOT NULL,
+CREATE TABLE PTDB4.elo
+(
+    player_id   integer references PTDB4.players (id),
+    acquired_on date,
+    elo         integer check (elo > 0 and elo < 3400),
+    unique (player_id, acquired_on)
+);
+
+CREATE INDEX player_elo ON PTDB4.elo (player_id);
+
+CREATE TABLE PTDB4.formats
+(
+    id          serial PRIMARY KEY,
+    name        varchar(40) NOT NULL, -- some variant names are really long as they should include time of games and number of players to keep name unique or close to unique
     description varchar(200)
 );
-CREATE TABLE PTDB4.places(
-    id integer PRIMARY KEY,
-    country varchar(50) NOT NULL,
-    city varchar(50) NOT NULL,
-    street varchar(100),
-    street_number integer
+
+CREATE TABLE PTDB4.cities
+(
+    id            serial PRIMARY KEY,
+    city          varchar(85) NOT NULL, --Taumatawhakatangi­hangakoauauotamatea­turipukakapikimaunga­horonukupokaiwhen­uakitanatahu (New Zealand)
+    street        varchar(38),          --Jean Baptiste Point du Sable Lake Shore Drive (Chicago)
+    street_number varchar(10)           --couldn't find longer, tried though
 );
 
-CREATE TABLE PTDB4.tournaments(
-    id integer PRIMARY KEY,
-    "name" varchar NOT NULL,
-    "type" integer NOT NULL REFERENCES ptdb4.types,
-    place integer REFERENCES ptdb4.places,
-    "start_date" date NOT NULL,
-    "end_date" date NOT NULL,
-    check(start_date < end_date)
-);
-CREATE TABLE PTDB4.move_record(
-    id integer PRIMARY KEY,
-    record varchar NOT NULL
-);
-
-CREATE TABLE PTDB4.openings(
-    id integer PRIMARY KEY,
-    first_moves varchar(10),
-    name varchar(100) UNIQUE NOT NULL
+CREATE TABLE PTDB4.places
+(
+    id      serial PRIMARY KEY,
+    country varchar(56) NOT NULL, --The United Kingdom of Great Britain and Northern Ireland
+    city_id integer REFERENCES ptdb4.cities
 );
 
 
-CREATE TABLE PTDB4.game_record(
-    id integer PRIMARY KEY,
-    id_record integer REFERENCES ptdb4.move_record,
-    id_opening integer REFERENCES ptdb4.openings,
+CREATE TABLE PTDB4.tournaments
+(
+    id           serial PRIMARY KEY,
+    "name"       varchar(30) NOT NULL,
+    format       integer     NOT NULL REFERENCES ptdb4.formats,
+    place        integer REFERENCES ptdb4.places,
+    "start_date" date        NOT NULL,
+    "end_date"   date        NOT NULL,
+    check (start_date < end_date)
+);
+
+CREATE TABLE PTDB4.openings
+(
+    id          serial PRIMARY KEY,
+    opening_id  integer REFERENCES PTDB4.opening_name (id),
+    move_number integer    NOT NULL,
+    move_W      varchar(7) NOT NULL,
+    move_B      varchar(7) NOT NULL
+);--no indexing, table will be relatively small
+
+CREATE TABLE PTDB4.opening_name
+(
+    id   serial PRIMARY KEY,
+    name varchar(20) NOT NULL
+);
+
+CREATE TABLE PTDB4.game_record
+(
+    id          serial PRIMARY KEY,
+    game_id     integer      NOT NULL REFERENCES ptdb4.pairings,
     game_result match_result NOT NULL,
-    ending varchar,
-    UNIQUE(id_record)
+    ending      varchar(10)--possible ending conditions
 );
 
+CREATE TABLE PTDB4.moves_record
+(
+    id          serial PRIMARY KEY,
+    game_id     integer NOT NULL REFERENCES ptdb4.game_record,
+    move_number integer NOT NULL,
+    move_W      varchar(7), --if there are 3 knights on the board it is possible to need 7 characters to describe one move.
+    move_B      varchar(7)  --it would be for example "Nd1xc3#". Black can be null if game ended on white move
+);
 
-CREATE TABLE PTDB4.pairings(
-    id integer PRIMARY KEY,
-    white integer NOT NULL REFERENCES ptdb4.players,
-    black integer NOT NULL REFERENCES ptdb4.players,
+CREATE INDEX each_game ON PTDB4.moves_record (game_id);
+
+CREATE TABLE PTDB4.pairings
+(
+    id            serial PRIMARY KEY,
+    white         integer      NOT NULL REFERENCES ptdb4.players,
+    black         integer      NOT NULL REFERENCES ptdb4.players,
     tournament_id integer REFERENCES ptdb4.tournaments,
-    "result" match_result NOT NULL,
-    "date"   date,
-    id_record integer REFERENCES ptdb4.game_record
+    "result"      match_result NOT NULL,
+    match_date    date,
+    id_record     integer REFERENCES ptdb4.game_record
 );
 
-CREATE TABLE PTDB4.pairing_tournament(
-    pairing_id integer UNIQUE NOT NULL REFERENCES ptdb4.pairings,
-    tournament_id integer NOT NULL REFERENCES ptdb4.tournaments,
-    rank integer
+CREATE INDEX each_tournament ON PTDB4.pairings (tournament_id);
+
+CREATE TABLE PTDB4.pairing_tournament
+(
+    pairing_id    integer UNIQUE NOT NULL REFERENCES ptdb4.pairings,
+    tournament_id integer        NOT NULL REFERENCES ptdb4.tournaments,
+    level         integer
 );
 
-CREATE TABLE PTDB4.player_tournament(
-    player_id integer NOT NULL REFERENCES ptdb4.players,
+CREATE TABLE PTDB4.player_tournament
+(
+    player_id     integer NOT NULL REFERENCES ptdb4.players,
     tournament_id integer NOT NULL REFERENCES ptdb4.tournaments
 );
 
@@ -105,7 +145,7 @@ COPY PTDB4.groups (id, group_name) FROM stdin;
 20	Sky   
 \.
 
-COPY PTDB4.players (id,first_name,last_name, group_id, elo, max_elo) FROM stdin;
+COPY PTDB4.players (id, first_name, last_name, group_id, elo, max_elo) FROM stdin;
 1	Haldorsen	Benjamin	15	2448	2570
 2	Tomashevsky	Evgeny	6	2705	2840
 3	Kozak	Adam	3	2445	2567
@@ -258,343 +298,343 @@ COPY PTDB4.players (id,first_name,last_name, group_id, elo, max_elo) FROM stdin;
 150	Livaic	Leon	19	2477	2601
 \.
 
-COPY PTDB4.pairings (id, white, black, result, "date") from stdin;
-10	24	29	white	2021-09-27
-11	93	116	draw	2021-09-27
-12	89	36	white	2021-09-27
-13	124	42	black	2021-09-27
-14	26	113	white	2021-09-27
-15	4	104	draw	2021-09-27
-16	57	24	draw	2021-09-27
-17	108	100	black	2021-09-27
-18	1	12	draw	2021-09-27
-19	82	27	black	2021-09-27
-20	81	5	white	2021-09-27
-21	83	96	white	2021-09-27
-22	39	134	draw	2021-09-27
-23	61	147	white	2021-09-27
-24	83	89	white	2021-09-27
-25	121	24	black	2021-09-27
-26	103	44	black	2021-09-27
-27	41	81	draw	2021-09-27
-28	114	16	draw	2021-09-27
-29	39	67	white	2021-09-27
-30	32	91	white	2021-09-27  
-31	45	96	draw	2021-09-27
-32	30	84	white	2021-09-27
-33	35	25	draw	2021-09-27
-34	81	99	black	2021-09-27
-35	6	148	black	2021-09-27
-36	105	76	black	2021-09-27
-37	26	77	draw	2021-09-27
-38	63	70	white	2021-09-27
-39	5	83	black	2021-09-27
-40	51	126	draw	2021-09-27
-41	121	130	white	2021-09-27
-42	148	137	white	2021-09-27
-43	138	45	white	2021-09-27
-44	149	111	draw	2021-09-27
-45	148	56	white	2021-09-27
-46	2	62	black	2021-09-27
-47	35	32	white	2021-09-27
-48	20	67	draw	2021-09-27
-49	22	96	black	2021-09-27
-50	88	19	white	2021-09-27
-51	130	61	black	2021-09-27
-52	46	96	white	2021-09-27
-53	39	91	white	2021-09-27
-54	122	51	white	2021-09-27
-55	109	65	draw	2021-09-27
-56	88	111	white	2021-09-27
-57	75	129	black	2021-09-27
-58	124	94	black	2021-09-27
-59	65	33	black	2021-09-27
-60	57	80	white	2021-09-27
-61	36	99	black	2021-09-27
-62	74	78	white	2021-09-27
-63	15	45	black	2021-09-27
-64	14	140	draw	2021-09-27
-65	19	136	black	2021-09-27
-66	119	100	black	2021-09-27
-67	124	82	black	2021-09-27
-68	147	122	black	2021-09-27
-69	67	46	white	2021-09-27
-70	60	126	black	2021-11-20
-71	118	76	white	2021-11-20
-72	79	115	black	2021-11-20
-73	44	86	draw	2021-11-20
-74	102	19	white	2021-11-20
-75	18	71	white	2021-11-20
-76	109	90	white	2021-11-20
-77	148	142	black	2021-11-20
-78	107	104	black	2021-11-20
-79	63	92	white	2021-11-20
-80	112	95	draw	2021-11-20
-81	93	105	draw	2021-11-20
-82	14	17	white	2021-11-20
-83	127	17	draw	2021-11-20
-84	36	13	black	2021-11-20
-85	19	120	white	2021-11-20
-86	137	11	white	2021-11-20
-87	39	37	black	2021-11-20
-88	40	111	black	2021-11-20
-89	104	53	draw	2021-11-20
-90	40	4	draw	2021-11-20
-91	132	135	black	2021-11-20
-92	127	94	black	2021-11-20
-93	63	62	draw	2021-11-20
-94	27	49	white	2021-11-20
-95	27	1	draw	2021-11-20
-96	137	49	draw	2021-11-20
-97	85	25	white	2021-11-20
-98	90	62	draw	2021-11-20
-99	16	5	black	2021-11-20
-100	13	26	black	2021-11-20
-101	11	98	draw	2021-11-20
-102	19	142	draw	2021-11-20
-103	68	61	draw	2021-11-20
-104	143	95	black	2021-11-20
-105	76	112	black	2021-11-20
-106	134	76	draw	2021-11-20
-107	96	11	black	2021-11-20
-108	77	27	draw	2021-11-20
-109	124	73	white	2021-11-20
-110	150	114	draw	2021-11-20
-111	81	31	white	2021-11-20
-112	7	34	white	2021-11-20
-113	20	77	draw	2021-11-20
-114	81	73	white	2021-11-20
-115	111	22	black	2021-11-20
-116	87	44	draw	2021-11-20
-117	112	144	white	2021-11-20
-118	126	21	draw	2021-11-20
-119	30	137	draw	2021-11-20
-120	94	79	white	2021-11-20
-121	120	110	draw	2021-11-20
-122	83	73	white	2021-11-20
-123	141	4	draw	2021-11-20
-124	33	37	white	2021-11-20
-125	103	147	black	2021-11-20
-126	57	32	draw	2021-11-20
-127	67	116	draw	2021-11-20
-128	48	50	black	2021-11-20
-129	128	95	draw	2021-11-20
-130	114	100	black	2022-01-10
-131	140	109	white	2022-01-10
-132	9	7	black	2022-01-10
-133	97	41	draw	2022-01-10
-134	95	148	draw	2022-01-10
-135	112	9	draw	2022-01-10
-136	101	13	white	2022-01-10
-137	67	121	draw	2022-01-10
-138	118	3	draw	2022-01-10
-139	95	69	white	2022-01-10
-140	141	144	draw	2022-01-10
-141	21	2	draw	2022-01-10
-142	36	41	white	2022-01-10
-143	129	18	draw	2022-01-10
-144	77	84	white	2022-01-10
-145	87	116	white	2022-01-10
-146	137	86	black	2022-01-10
-147	66	2	draw	2022-01-10
-148	68	1	black	2022-01-10
-149	34	71	draw	2022-01-10
-150	76	53	black	2022-01-10
-151	84	9	draw	2022-01-10
-152	89	24	draw	2022-01-10
-153	83	15	black	2022-01-10
-154	106	31	black	2022-01-10
-155	131	119	white	2022-01-10
-156	22	2	draw	2022-01-10
-157	149	145	white	2022-01-10
-158	53	52	black	2022-01-10
-159	19	130	black	2022-01-10
-160	143	42	white	2022-01-10
-161	96	119	white	2022-01-10
-162	149	141	white	2022-01-10
-163	113	129	draw	2022-01-10
-164	34	93	draw	2022-01-10
-165	87	116	black	2022-01-10
-166	65	132	draw	2022-01-10
-167	36	121	white	2022-01-10
-168	131	72	white	2022-01-10
-169	58	129	black	2022-01-10
-170	54	120	black	2022-01-10
-171	124	150	black	2022-01-10
-172	103	13	black	2022-01-10
-173	21	101	draw	2022-01-10
-174	33	16	draw	2022-01-10
-175	38	69	draw	2022-01-10
-176	82	100	white	2022-01-10
-177	64	81	white	2022-01-10
-178	52	28	draw	2022-01-10
-179	111	146	draw	2022-01-10
-180	47	86	draw	2022-01-10
-181	142	51	black	2022-01-10
-182	70	24	white	2022-01-10
-183	101	128	black	2022-01-10
-184	76	13	draw	2022-01-10
-185	80	125	draw	2022-01-10
-186	124	101	draw	2022-01-10
-187	36	131	black	2022-01-10
-188	45	75	draw	2022-01-10
-190	111	129	white	2022-03-18
-191	92	43	white	2022-03-18
-192	16	96	draw	2022-03-18
-193	120	116	draw	2022-03-18
-194	20	70	draw	2022-03-18
-195	28	57	draw	2022-03-18
-196	9	108	black	2022-03-18
-197	33	42	draw	2022-03-18
-198	112	56	white	2022-03-18
-199	76	25	draw	2022-03-18
-200	18	33	white	2022-03-18
-201	142	74	white	2022-03-18
-202	13	30	white	2022-03-18
-203	30	97	black	2022-03-18
-204	70	145	draw	2022-03-18
-205	46	3	black	2022-03-18
-206	12	68	black	2022-03-18
-207	93	24	black	2022-03-18
-208	68	19	white	2022-03-18
-209	2	72	black	2022-03-18
-210	128	95	draw	2022-03-18
-211	4	86	draw	2022-03-18
-212	81	62	black	2022-03-18
-213	121	59	black	2022-03-18
-214	116	97	white	2022-03-18
-215	78	32	white	2022-03-18
-216	53	125	black	2022-03-18
-217	82	56	black	2022-03-18
-218	116	117	white	2022-03-18
-219	56	124	black	2022-03-18
-220	63	137	black	2022-03-18
-221	70	86	draw	2022-03-18
-222	79	104	black	2022-03-18
-223	94	86	draw	2022-03-18
-224	24	105	black	2022-03-18
-225	46	130	white	2022-03-18
-226	120	83	white	2022-03-18
-227	29	145	draw	2022-03-18
-228	35	149	draw	2022-03-18
-229	54	139	white	2022-03-18
-230	100	139	white	2022-03-18
-231	141	9	draw	2022-03-18
-232	16	66	white	2022-03-18
-233	49	139	black	2022-03-18
-234	70	130	white	2022-03-18
-235	72	11	white	2022-03-18
-236	76	6	draw	2022-03-18
-237	69	11	white	2022-03-18
-238	67	108	draw	2022-03-18
-239	147	73	white	2022-03-18
-240	80	20	black	2022-03-18
-241	33	95	white	2022-03-18
-242	37	77	white	2022-03-18
-243	4	133	black	2022-03-18
-244	98	80	white	2022-03-18
-245	78	10	draw	2022-03-18
-246	11	124	draw	2022-03-18
-247	26	89	draw	2022-03-18
-248	34	136	draw	2022-03-18
-249	86	125	black	2022-03-18
-250	129	50	white	2022-06-15
-251	137	31	black	2022-06-15
-252	104	9	draw	2022-06-15
-253	136	19	black	2022-06-15
-254	61	125	draw	2022-06-15
-255	53	88	white	2022-06-15
-256	126	131	black	2022-06-15
-257	8	31	white	2022-06-15
-258	112	25	white	2022-06-15
-259	51	118	white	2022-06-15
-260	8	114	white	2022-06-15
-261	101	56	white	2022-06-15
-262	32	120	black	2022-06-15
-263	120	80	draw	2022-06-15
-264	43	86	white	2022-06-15
-265	69	73	draw	2022-06-15
-266	149	31	draw	2022-06-15
-267	24	94	draw	2022-06-15
-268	133	84	black	2022-06-15
-269	146	3	draw	2022-06-15
-270	86	81	black	2022-06-15
-271	146	88	white	2022-06-15
-272	51	143	white	2022-06-15
-273	84	8	draw	2022-06-15
-274	18	92	white	2022-06-15
-275	123	55	draw	2022-06-15
-276	46	80	draw	2022-06-15
-277	85	15	black	2022-06-15
-278	109	23	black	2022-06-15
-279	79	15	white	2022-06-15
-280	129	9	draw	2022-06-15
-281	110	25	black	2022-06-15
-282	30	38	black	2022-06-15
-283	96	80	draw	2022-06-15
-284	68	97	black	2022-06-15
-285	20	86	black	2022-06-15
-286	88	99	white	2022-06-15
-287	118	3	draw	2022-06-15
-288	73	59	draw	2022-06-15
-289	101	132	white	2022-06-15
-290	33	10	black	2022-06-15
-291	88	109	black	2022-06-15
-292	17	107	draw	2022-06-15
-293	33	103	draw	2022-06-15
-294	102	128	black	2022-06-15
-295	36	120	draw	2022-06-15
-296	79	11	draw	2022-06-15
-297	129	126	white	2022-06-15
-298	3	106	draw	2022-06-15
-299	103	33	black	2022-06-15
-300	79	91	black	2022-06-15
-301	57	103	white	2022-06-15
-302	53	78	draw	2022-06-15
-303	75	45	white	2022-06-15
-304	88	147	draw	2022-06-15
-305	46	63	white	2022-06-15
-306	83	43	white	2022-06-15
-307	21	144	white	2022-06-15
-308	54	103	draw	2022-06-15
-309	28	31	black	2022-06-15
+COPY PTDB4.pairings (id, white, black, result, match_date) from stdin;
+10	24	29	W	2021-09-27
+11	93	116	D	2021-09-27
+12	89	36	W	2021-09-27
+13	124	42	B	2021-09-27
+14	26	113	W	2021-09-27
+15	4	104	D	2021-09-27
+16	57	24	D	2021-09-27
+17	108	100	B	2021-09-27
+18	1	12	D	2021-09-27
+19	82	27	B	2021-09-27
+20	81	5	W	2021-09-27
+21	83	96	W	2021-09-27
+22	39	134	D	2021-09-27
+23	61	147	W	2021-09-27
+24	83	89	W	2021-09-27
+25	121	24	B	2021-09-27
+26	103	44	B	2021-09-27
+27	41	81	D	2021-09-27
+28	114	16	D	2021-09-27
+29	39	67	W	2021-09-27
+30	32	91	W	2021-09-27  
+31	45	96	D	2021-09-27
+32	30	84	W	2021-09-27
+33	35	25	D	2021-09-27
+34	81	99	B	2021-09-27
+35	6	148	B	2021-09-27
+36	105	76	B	2021-09-27
+37	26	77	D	2021-09-27
+38	63	70	W	2021-09-27
+39	5	83	B	2021-09-27
+40	51	126	D	2021-09-27
+41	121	130	W	2021-09-27
+42	148	137	W	2021-09-27
+43	138	45	W	2021-09-27
+44	149	111	D	2021-09-27
+45	148	56	W	2021-09-27
+46	2	62	B	2021-09-27
+47	35	32	W	2021-09-27
+48	20	67	D	2021-09-27
+49	22	96	B	2021-09-27
+50	88	19	W	2021-09-27
+51	130	61	B	2021-09-27
+52	46	96	W	2021-09-27
+53	39	91	W	2021-09-27
+54	122	51	W	2021-09-27
+55	109	65	D	2021-09-27
+56	88	111	W	2021-09-27
+57	75	129	B	2021-09-27
+58	124	94	B	2021-09-27
+59	65	33	B	2021-09-27
+60	57	80	W	2021-09-27
+61	36	99	B	2021-09-27
+62	74	78	W	2021-09-27
+63	15	45	B	2021-09-27
+64	14	140	D	2021-09-27
+65	19	136	B	2021-09-27
+66	119	100	B	2021-09-27
+67	124	82	B	2021-09-27
+68	147	122	B	2021-09-27
+69	67	46	W	2021-09-27
+70	60	126	B	2021-11-20
+71	118	76	W	2021-11-20
+72	79	115	B	2021-11-20
+73	44	86	D	2021-11-20
+74	102	19	W	2021-11-20
+75	18	71	W	2021-11-20
+76	109	90	W	2021-11-20
+77	148	142	B	2021-11-20
+78	107	104	B	2021-11-20
+79	63	92	W	2021-11-20
+80	112	95	D	2021-11-20
+81	93	105	D	2021-11-20
+82	14	17	W	2021-11-20
+83	127	17	D	2021-11-20
+84	36	13	B	2021-11-20
+85	19	120	W	2021-11-20
+86	137	11	W	2021-11-20
+87	39	37	B	2021-11-20
+88	40	111	B	2021-11-20
+89	104	53	D	2021-11-20
+90	40	4	D	2021-11-20
+91	132	135	B	2021-11-20
+92	127	94	B	2021-11-20
+93	63	62	D	2021-11-20
+94	27	49	W	2021-11-20
+95	27	1	D	2021-11-20
+96	137	49	D	2021-11-20
+97	85	25	W	2021-11-20
+98	90	62	D	2021-11-20
+99	16	5	B	2021-11-20
+100	13	26	B	2021-11-20
+101	11	98	D	2021-11-20
+102	19	142	D	2021-11-20
+103	68	61	D	2021-11-20
+104	143	95	B	2021-11-20
+105	76	112	B	2021-11-20
+106	134	76	D	2021-11-20
+107	96	11	B	2021-11-20
+108	77	27	D	2021-11-20
+109	124	73	W	2021-11-20
+110	150	114	D	2021-11-20
+111	81	31	W	2021-11-20
+112	7	34	W	2021-11-20
+113	20	77	D	2021-11-20
+114	81	73	W	2021-11-20
+115	111	22	B	2021-11-20
+116	87	44	D	2021-11-20
+117	112	144	W	2021-11-20
+118	126	21	D	2021-11-20
+119	30	137	D	2021-11-20
+120	94	79	W	2021-11-20
+121	120	110	D	2021-11-20
+122	83	73	W	2021-11-20
+123	141	4	D	2021-11-20
+124	33	37	W	2021-11-20
+125	103	147	B	2021-11-20
+126	57	32	D	2021-11-20
+127	67	116	D	2021-11-20
+128	48	50	B	2021-11-20
+129	128	95	D	2021-11-20
+130	114	100	B	2022-01-10
+131	140	109	W	2022-01-10
+132	9	7	B	2022-01-10
+133	97	41	D	2022-01-10
+134	95	148	D	2022-01-10
+135	112	9	D	2022-01-10
+136	101	13	W	2022-01-10
+137	67	121	D	2022-01-10
+138	118	3	D	2022-01-10
+139	95	69	W	2022-01-10
+140	141	144	D	2022-01-10
+141	21	2	D	2022-01-10
+142	36	41	W	2022-01-10
+143	129	18	D	2022-01-10
+144	77	84	W	2022-01-10
+145	87	116	W	2022-01-10
+146	137	86	B	2022-01-10
+147	66	2	D	2022-01-10
+148	68	1	B	2022-01-10
+149	34	71	D	2022-01-10
+150	76	53	B	2022-01-10
+151	84	9	D	2022-01-10
+152	89	24	D	2022-01-10
+153	83	15	B	2022-01-10
+154	106	31	B	2022-01-10
+155	131	119	W	2022-01-10
+156	22	2	D	2022-01-10
+157	149	145	W	2022-01-10
+158	53	52	B	2022-01-10
+159	19	130	B	2022-01-10
+160	143	42	W	2022-01-10
+161	96	119	W	2022-01-10
+162	149	141	W	2022-01-10
+163	113	129	D	2022-01-10
+164	34	93	D	2022-01-10
+165	87	116	B	2022-01-10
+166	65	132	D	2022-01-10
+167	36	121	W	2022-01-10
+168	131	72	W	2022-01-10
+169	58	129	B	2022-01-10
+170	54	120	B	2022-01-10
+171	124	150	B	2022-01-10
+172	103	13	B	2022-01-10
+173	21	101	D	2022-01-10
+174	33	16	D	2022-01-10
+175	38	69	D	2022-01-10
+176	82	100	W	2022-01-10
+177	64	81	W	2022-01-10
+178	52	28	D	2022-01-10
+179	111	146	D	2022-01-10
+180	47	86	D	2022-01-10
+181	142	51	B	2022-01-10
+182	70	24	W	2022-01-10
+183	101	128	B	2022-01-10
+184	76	13	D	2022-01-10
+185	80	125	D	2022-01-10
+186	124	101	D	2022-01-10
+187	36	131	B	2022-01-10
+188	45	75	D	2022-01-10
+190	111	129	W	2022-03-18
+191	92	43	W	2022-03-18
+192	16	96	D	2022-03-18
+193	120	116	D	2022-03-18
+194	20	70	D	2022-03-18
+195	28	57	D	2022-03-18
+196	9	108	B	2022-03-18
+197	33	42	D	2022-03-18
+198	112	56	W	2022-03-18
+199	76	25	D	2022-03-18
+200	18	33	W	2022-03-18
+201	142	74	W	2022-03-18
+202	13	30	W	2022-03-18
+203	30	97	B	2022-03-18
+204	70	145	D	2022-03-18
+205	46	3	B	2022-03-18
+206	12	68	B	2022-03-18
+207	93	24	B	2022-03-18
+208	68	19	W	2022-03-18
+209	2	72	B	2022-03-18
+210	128	95	D	2022-03-18
+211	4	86	D	2022-03-18
+212	81	62	B	2022-03-18
+213	121	59	B	2022-03-18
+214	116	97	W	2022-03-18
+215	78	32	W	2022-03-18
+216	53	125	B	2022-03-18
+217	82	56	B	2022-03-18
+218	116	117	W	2022-03-18
+219	56	124	B	2022-03-18
+220	63	137	B	2022-03-18
+221	70	86	D	2022-03-18
+222	79	104	B	2022-03-18
+223	94	86	D	2022-03-18
+224	24	105	B	2022-03-18
+225	46	130	W	2022-03-18
+226	120	83	W	2022-03-18
+227	29	145	D	2022-03-18
+228	35	149	D	2022-03-18
+229	54	139	W	2022-03-18
+230	100	139	W	2022-03-18
+231	141	9	D	2022-03-18
+232	16	66	W	2022-03-18
+233	49	139	B	2022-03-18
+234	70	130	W	2022-03-18
+235	72	11	W	2022-03-18
+236	76	6	D	2022-03-18
+237	69	11	W	2022-03-18
+238	67	108	D	2022-03-18
+239	147	73	W	2022-03-18
+240	80	20	B	2022-03-18
+241	33	95	W	2022-03-18
+242	37	77	W	2022-03-18
+243	4	133	B	2022-03-18
+244	98	80	W	2022-03-18
+245	78	10	D	2022-03-18
+246	11	124	D	2022-03-18
+247	26	89	D	2022-03-18
+248	34	136	D	2022-03-18
+249	86	125	B	2022-03-18
+250	129	50	W	2022-06-15
+251	137	31	B	2022-06-15
+252	104	9	D	2022-06-15
+253	136	19	B	2022-06-15
+254	61	125	D	2022-06-15
+255	53	88	W	2022-06-15
+256	126	131	B	2022-06-15
+257	8	31	W	2022-06-15
+258	112	25	W	2022-06-15
+259	51	118	W	2022-06-15
+260	8	114	W	2022-06-15
+261	101	56	W	2022-06-15
+262	32	120	B	2022-06-15
+263	120	80	D	2022-06-15
+264	43	86	W	2022-06-15
+265	69	73	D	2022-06-15
+266	149	31	D	2022-06-15
+267	24	94	D	2022-06-15
+268	133	84	B	2022-06-15
+269	146	3	D	2022-06-15
+270	86	81	B	2022-06-15
+271	146	88	W	2022-06-15
+272	51	143	W	2022-06-15
+273	84	8	D	2022-06-15
+274	18	92	W	2022-06-15
+275	123	55	D	2022-06-15
+276	46	80	D	2022-06-15
+277	85	15	B	2022-06-15
+278	109	23	B	2022-06-15
+279	79	15	W	2022-06-15
+280	129	9	D	2022-06-15
+281	110	25	B	2022-06-15
+282	30	38	B	2022-06-15
+283	96	80	D	2022-06-15
+284	68	97	B	2022-06-15
+285	20	86	B	2022-06-15
+286	88	99	W	2022-06-15
+287	118	3	D	2022-06-15
+288	73	59	D	2022-06-15
+289	101	132	W	2022-06-15
+290	33	10	B	2022-06-15
+291	88	109	B	2022-06-15
+292	17	107	D	2022-06-15
+293	33	103	D	2022-06-15
+294	102	128	B	2022-06-15
+295	36	120	D	2022-06-15
+296	79	11	D	2022-06-15
+297	129	126	W	2022-06-15
+298	3	106	D	2022-06-15
+299	103	33	B	2022-06-15
+300	79	91	B	2022-06-15
+301	57	103	W	2022-06-15
+302	53	78	D	2022-06-15
+303	75	45	W	2022-06-15
+304	88	147	D	2022-06-15
+305	46	63	W	2022-06-15
+306	83	43	W	2022-06-15
+307	21	144	W	2022-06-15
+308	54	103	D	2022-06-15
+309	28	31	B	2022-06-15
 \.
-
-COPY PTDB4.move_record (id, record) from stdin;
-1	1. f4 d5 2. Nf3 g6 3. g3 Bg7 4. Bg2 Nf6 5. O-O O-O 6. d3 c5 7. c3 Nc6 8. Na3 Rb8 9. Ne5 Nxe5 10. fxe5 Ne8
-2	1. e4 h5 2. h4 g6 3. d4 Bg7 4. Nc3 d6 5. Be3 a6 6. Qd2 b5 7. f3 Nd7 8. Nh3 Bb7 9. O-O-O Rc8 10. Ng5 c5
-3	1. e4 c5 2. Nf3 d6 3. d4 Nf6 4. dxc5 Qa5+ 5. Nc3 Qxc5 6. Be3 Qa5 7. Qd2 Nc6 8. h3 g6 9. Bd3 Bg7 10. O-O O-O
-4	1. d4 Nf6 2. c4 e6 3. Bg5 Be7 4. Nf3 d5 5. Nc3 O-O 6. e3 Nbd7 7. Qc2 c5 8. Rd1 cxd4 9. exd4 b6 10. Bd3 dxc4
-5	1. b3 e5 2. Bb2 Nc6 3. e3 Nf6 4. c4 Be7 5. Nf3 e4 6. Nd4 Nxd4 7. Bxd4 O-O 8. Nc3 c5 9. Be5 d6 10. Bg3 Bf5
-6	1. e4 c6 2. Nf3 g6 3. d3 Bg7 4. Nbd2 e5 5. c3 d5 6. Be2 Ne7 7. O-O O-O 8. Re1 h6 9. Bf1 Qc7 10. Qe2 d4
-7	1. c4 f5 2. Nc3 Nf6 3. e4 fxe4 4. d3 e5 5. dxe4 Bb4 6. Bd3 Bxc3+ 7. bxc3 d6 8. Ne2 Nbd7 9. O-O Nc5 10. f4 O-O
-8	1. d4 Nf6 2. c4 c5 3. d5 b5 4. Nf3 e6 5. Bg5 exd5 6. cxd5 d6 7. e4 a6 8. a4 Be7 9. Bxf6 Bxf6 10. axb5 Bxb2
-9	1. d4 f5 2. c4 Nf6 3. g3 e6 4. Bg2 Be7 5. Nf3 O-O 6. O-O Ne4 7. Nbd2 Bf6 8. Qc2 d5 9. b3 c5 10. cxd5 exd5
-\.
+--
+-- COPY PTDB4.move_record (id, record) from stdin;
+-- 1	1. f4 d5 2. Nf3 g6 3. g3 Bg7 4. Bg2 Nf6 5. O-O O-O 6. d3 c5 7. c3 Nc6 8. Na3 Rb8 9. Ne5 Nxe5 10. fxe5 Ne8
+-- 2	1. e4 h5 2. h4 g6 3. d4 Bg7 4. Nc3 d6 5. Be3 a6 6. Qd2 b5 7. f3 Nd7 8. Nh3 Bb7 9. O-O-O Rc8 10. Ng5 c5
+-- 3	1. e4 c5 2. Nf3 d6 3. d4 Nf6 4. dxc5 Qa5+ 5. Nc3 Qxc5 6. Be3 Qa5 7. Qd2 Nc6 8. h3 g6 9. Bd3 Bg7 10. O-O O-O
+-- 4	1. d4 Nf6 2. c4 e6 3. Bg5 Be7 4. Nf3 d5 5. Nc3 O-O 6. e3 Nbd7 7. Qc2 c5 8. Rd1 cxd4 9. exd4 b6 10. Bd3 dxc4
+-- 5	1. b3 e5 2. Bb2 Nc6 3. e3 Nf6 4. c4 Be7 5. Nf3 e4 6. Nd4 Nxd4 7. Bxd4 O-O 8. Nc3 c5 9. Be5 d6 10. Bg3 Bf5
+-- 6	1. e4 c6 2. Nf3 g6 3. d3 Bg7 4. Nbd2 e5 5. c3 d5 6. Be2 Ne7 7. O-O O-O 8. Re1 h6 9. Bf1 Qc7 10. Qe2 d4
+-- 7	1. c4 f5 2. Nc3 Nf6 3. e4 fxe4 4. d3 e5 5. dxe4 Bb4 6. Bd3 Bxc3+ 7. bxc3 d6 8. Ne2 Nbd7 9. O-O Nc5 10. f4 O-O
+-- 8	1. d4 Nf6 2. c4 c5 3. d5 b5 4. Nf3 e6 5. Bg5 exd5 6. cxd5 d6 7. e4 a6 8. a4 Be7 9. Bxf6 Bxf6 10. axb5 Bxb2
+-- 9	1. d4 f5 2. c4 Nf6 3. g3 e6 4. Bg2 Be7 5. Nf3 O-O 6. O-O Ne4 7. Nbd2 Bf6 8. Qc2 d5 9. b3 c5 10. cxd5 exd5
+-- \.
 
 COPY PTDB4.game_record (id, id_record, game_result) from stdin;
-1	9	white
-2	8	white
-3	7	draw
-4	6	white
-5	5	draw
-6	4	black
-7	3	black
-8	2	draw
+1	9	W
+2	8	W
+3	7	D
+4	6	W
+5	5	D
+6	4	B
+7	3	B
+8	2	D
 \.
 
-COPY PTDB4.pairings (id, white, black, result, date, id_record) from stdin;
-350	89	130	white	2022-08-17	1
-351	149	61	white	2022-08-17	2
-352	21	39	draw	2022-08-17	3
-353	60	1	white	2022-08-17	4
-354	66	91	draw	2022-08-17	5
-355	105	116	black	2022-08-17	6
-356	63	132	draw	2022-08-17	7
-357	105	70	black	2022-08-17	8
+COPY PTDB4.pairings (id, white, black, result, match_date, id_record) from stdin;
+350	89	130	W	2022-08-17	1
+351	149	61	W	2022-08-17	2
+352	21	39	D	2022-08-17	3
+353	60	1	W	2022-08-17	4
+354	66	91	D	2022-08-17	5
+355	105	116	B	2022-08-17	6
+356	63	132	D	2022-08-17	7
+357	105	70	B	2022-08-17	8
 \.
 
-COPY PTDB4.types (id, name ) FROM stdin;
+COPY PTDB4.formats (id, name) FROM stdin;
 1	Double Round Robin
 2	Single Round Robin
 3	Swiss System
@@ -603,25 +643,42 @@ COPY PTDB4.types (id, name ) FROM stdin;
 \.
 
 COPY PTDB4.openings (id, first_moves, name) FROM stdin;
-1	1. e4 Nf6	Alekhine Defence
-2	1. d4 Nf6	Indian Defence
-3	1. d4 e5	Englund Gambit
-4	1. e4 d5	Scandinavian Defence
-5	1. e4 c5	Sicilian Defence
-6	1. e4 e6	French Defence
-7	1. g3 d5	Hungarian Defence
-8	1. d4 d5	Queens Pawn Game
+1   1   1   e4  Nf6
+2   2   1   d4  Nf6
+3   3   1   d4  e5
+4   4   1   e4  d5
+5   5   1   e4  c5
+6   6   1   e4  e6
+7   7   1   g3  d5
+8   8   1   d4  d5
 \.
 
-COPY PTDB4.places (id, country, city, street, street_number) FROM stdin;
-1	Poland	Krakow	Lojasiewicza	6
-2	Poland	Katowice	3 Maja	42
-3	Australia	Vienna	Kaiser st.	112
-4	United States	Washington DC	White House	1
-5	Austria	Sydney	Hobbit st.	214
+COPY PTDB4.opening_name (id, name) FROM stdin;
+1   Alekhine Defence
+2   Indian Defence
+3   Englund Gambit
+4   Scandinavian Defence
+5   Sicilian Defence
+6   French Defence
+7   Hungarian Defence
+8   Queens Pawn Game
+
+COPY PTDB4.places (id, country, city_id) FROM stdin;
+1	Poland	1
+2	Poland	2
+3	Australia	3
+4	United States	4
+5	Austria	5
 \.
 
-COPY PTDB4.tournaments (id, name, type, place, start_date, end_date) FROM stdin;
+COPY PTDB4.cities (id, city, street, street_number) FROM stdin;
+1	Krakow	Lojasiewicza	6
+2	Katowice	3 Maja	42
+3	Vienna	Kaiser st.	112
+4	Washington DC	White House	1
+5	Sydney	Hobbit st.	214
+
+COPY PTDB4.tournaments (id, name, format, place, start_date, end_date) FROM stdin;
 1	TCS Cup	1	3	2019.04.30	2023.05.12
 2	Weird Tournament	4	1	2021.03.12	2022.12.17
 \.
