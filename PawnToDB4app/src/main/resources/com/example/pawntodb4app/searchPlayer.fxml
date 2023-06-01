@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<VBox alignment="CENTER" spacing="10" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.pawntodb4app.SearchPlayerController">
+    <Label text="Szukaj Gracza"/>
+    <TextField fx:id="firstNameField" promptText="Imię"/>
+    <TextField fx:id="lastNameField" promptText="Nazwisko"/>
+    <Button text="Szukaj" onAction="#handleSearchButton"/>
+    <Button fx:id="backButton" text="Wróć do Menu Głównego" onAction="#handleBackButton"/>
+
+</VBox>
