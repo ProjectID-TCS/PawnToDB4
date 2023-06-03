@@ -62,6 +62,25 @@ CREATE TABLE PTDB4.tournaments
     check (start_date < end_date)
 );
 
+CREATE OR REPLACE FUNCTION insert_tournament()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    if new.tournament_id is null then
+    return new;
+    end if;
+    if (select * from tournaments where id = new.tournament_id) is null then
+        return old;
+    end if;
+    return new;
+END;
+$$
+language plpgsql;
+
+CREATE TRIGGER insert_tournament
+    BEFORE INSERT OR UPDATE ON pairings
+    FOR EACH ROW EXECUTE PROCEDURE insert_tournament();
+
 CREATE TABLE PTDB4.openings
 (
     id          serial PRIMARY KEY,
@@ -106,6 +125,74 @@ CREATE TABLE PTDB4.pairings
     match_date    date,
     id_record     integer REFERENCES ptdb4.game_record
 );
+
+CREATE OR REPLACE FUNCTION calculateElo(white int,black int,result int)
+    RETURNS int[] AS
+$$
+DECLARE
+    newWhite int;
+    newBlack int;
+    diff int= abs(white-black);
+    res int[];
+BEGIN
+    if result = 1 then
+        if white > black then
+            newWhite = white+1+diff/8;
+            newBlack = black-1-diff/8;
+        elsif white < black then
+            newWhite = white+3+diff/5;
+            newBlack = black-3-diff/5;
+        end if;
+    elsif result = -1 then
+        if white > black then
+            newWhite = white-3-diff/5;
+            newBlack = black+3+diff/5;
+        elsif white < black then
+            newWhite = white+1+diff/8;
+            newBlack = black-1-diff/8;
+        end if;
+    else
+        if white > black then
+            newWhite = white-1-diff/10;
+            newBlack = black+1+diff/10;
+        elsif white < black then
+            newWhite = white+1+diff/10;
+            newBlack = black-1-diff/10;
+        end if;
+    end if;
+    res[1] = newWhite;
+    res[2] = newBlack;
+    return res;
+END;
+$$
+language plpgsql;
+CREATE OR REPLACE FUNCTION elo_update()
+    RETURNS TRIGGER AS
+$$
+DECLARE
+    eloW int;
+    eloB int;
+    updatedElo int[];
+BEGIN
+    eloB = (select elo.elo from PTDB4.elo where player_id = new.black order by acquired_on limit 1);
+    eloW = (select elo.elo from PTDB4.elo where player_id = new.white order by acquired_on limit 1);
+    if new.result = 'W' then
+        updatedElo = calculateElo(eloW,eloB,1);
+    elsif new.result = 'B' then
+        updatedElo = calculateElo(eloW,eloB,-1);
+    else
+        updatedElo = calculateElo(eloW,eloB,0);
+    end if;
+    insert into PTDB4.elo values(new.black,new.date,updatedElo[2]);
+    insert into PTDB4.elo values(new.white,new.date,updatedElo[1]);
+
+END;
+$$
+language plpgsql;
+
+CREATE TRIGGER elo_update
+    AFTER INSERT OR UPDATE ON pairings
+    FOR EACH ROW EXECUTE PROCEDURE elo_update();
 
 CREATE INDEX each_tournament ON PTDB4.pairings (tournament_id);
 
