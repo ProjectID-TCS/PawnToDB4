@@ -2,7 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
-<VBox alignment="CENTER" spacing="10" xmlns:fx="http://javafx.com/fxml"
+<VBox xmlns:fx="http://javafx.com/fxml" alignment="CENTER" spacing="10"
       fx:controller="com.example.pawntodb4app.SearchPlayerController">
     <Label text="Szukaj Gracza"/>
     <TextField fx:id="firstNameField" promptText="Imię"/>

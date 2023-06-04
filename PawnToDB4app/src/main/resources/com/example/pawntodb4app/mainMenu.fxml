@@ -2,8 +2,9 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.layout.VBox?>
-<VBox alignment="CENTER" spacing="10" xmlns:fx="http://javafx.com/fxml"
+<VBox xmlns:fx="http://javafx.com/fxml/1" alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx/19"
       fx:controller="com.example.pawntodb4app.MainMenuController">
-    <Button text="Dodaj Gracza" fx:id="addPlayerButton" onAction="#handleAddPlayerButton"/>
-    <Button text="Szukaj Gracza" fx:id="searchPlayerButton" onAction="#handleSearchPlayerButton"/>
+    <Button fx:id="addPlayerButton" onAction="#handleAddPlayerButton" text="Dodaj Gracza"/>
+    <Button fx:id="searchPlayerButton" onAction="#handleSearchPlayerButton" text="Szukaj Gracza"/>
+    <Button fx:id="addGameButton" onAction="#handleAddGameButton" text="Dodaj Partię"/>
 </VBox>

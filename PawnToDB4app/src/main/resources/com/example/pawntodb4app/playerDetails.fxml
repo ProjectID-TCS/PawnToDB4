@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<GridPane xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="com.example.pawntodb4app.PlayerDetailsController"
+          xmlns="http://javafx.com/javafx/8"
+          hgap="10" vgap="10"
+          alignment="CENTER">
+    <HBox alignment="CENTER" GridPane.rowIndex="0">
+        <Label text="Id: "/>
+        <Label fx:id="idField"/>
+    </HBox>
+    <HBox alignment="CENTER" GridPane.rowIndex="1">
+        <Label text="Imię: "/>
+        <Label fx:id="firstNameField"/>
+    </HBox>
+    <HBox alignment="CENTER" GridPane.rowIndex="2">
+        <Label text="Nazwisko: "/>
+        <Label fx:id="lastNameField"/>
+    </HBox>
+    <HBox alignment="CENTER" GridPane.rowIndex="3">
+        <Label text="Grupa: "/>
+        <Label fx:id="groupField"/>
+    </HBox>
+    <HBox alignment="CENTER" GridPane.rowIndex="4">
+        <Button text="Zamknij" onAction="#handleCloseButton"/>
+    </HBox>
+</GridPane>

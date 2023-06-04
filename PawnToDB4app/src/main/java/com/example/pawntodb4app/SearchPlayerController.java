@@ -4,11 +4,16 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class SearchPlayerController {
     @FXML
@@ -24,16 +29,59 @@ public class SearchPlayerController {
     private Button backButton;
 
     @FXML
-    public void handleSearchButton() {
+    public void handleSearchButton() throws IOException {
         String firstName = firstNameField.getText();
         String lastName = lastNameField.getText();
 
-        //Player player = searchPlayer(firstName, lastName);//TODO make Player class
-        System.out.println(firstName + " " + lastName);
+        if (firstName == null || firstName.isEmpty()) {
+            showAlert("Błąd", "Imię nie może być puste");
+            return;
+        }
+
+        if (lastName == null || lastName.isEmpty()) {
+            showAlert("Błąd", "Nazwisko nie może być puste");
+            return;
+        }
+
+        Player player = searchPlayer(firstName, lastName);
+        if (player == null) {
+            showAlert("Nie znaleziono", "Nie znaleziono gracza o podanym imieniu i nazwisku");
+        } else {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("playerDetails.fxml"));
+            Parent root = loader.load();
+
+            PlayerDetailsController controller = loader.getController();
+            controller.setPlayer(player);
+
+            Stage stage = new Stage();
+            stage.setTitle("Szczegóły Gracza");
+            stage.setScene(new Scene(root, 400, 300));
+            stage.show();
+        }
     }
 
-    private void searchPlayer(String firstName, String lastName) {
-        //TODO search for player in db
+    private Player searchPlayer(String firstName, String lastName) {
+        String query = "SELECT * FROM PTDB4.players WHERE first_name = ? AND last_name = ?";
+
+        try (Connection con = DataBaseConfig.connect();
+             PreparedStatement pst = con.prepareStatement(query)) {
+
+            pst.setString(1, firstName);
+            pst.setString(2, lastName);
+
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return new Player(rs.getInt("id"),
+                            rs.getString("first_name"),
+                            rs.getString("last_name"), rs.getInt("group_id"));
+                }
+            }
+
+        } catch (SQLException ex) {
+            showAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
+            ex.printStackTrace();
+        }
+        return null;
     }
 
     @FXML
@@ -43,5 +91,13 @@ public class SearchPlayerController {
 
         Stage stage = (Stage) backButton.getScene().getWindow();
         stage.setScene(new Scene(root, 800, 600));
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
