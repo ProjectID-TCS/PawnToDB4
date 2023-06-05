@@ -47,7 +47,7 @@ CREATE OR REPLACE FUNCTION max_elo_update()
 $$
 BEGIN
     IF new.elo > (
-        SELECT max_elo FROM players WHERE id = new.player_id
+        SELECT max_elo FROM PTDB4.players WHERE id = new.player_id
     ) THEN
         UPDATE players SET max_elo = new.elo WHERE id = new.player_id;
     END IF;
