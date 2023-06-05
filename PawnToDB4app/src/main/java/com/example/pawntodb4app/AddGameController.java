@@ -48,10 +48,11 @@ public class AddGameController {
 
     @FXML
     private TextField whitePlayerNazwisko;
+
     @FXML
     void handleAddButton(ActionEvent event) {
-        String query = "insert into match_insert_view" +
-                "values ('?','?','?','?','?','?','?')"; //imieB, nazwB,imieCz,nazwCz, wynik, data, turniej
+        String query = "INSERT INTO PTDB4.match_insert_view (w_first,w_last,b_first,b_last,result,match_date,tournament_id) " +
+                "VALUES (?, ?, ?, ?, CAST(? AS ptdb4.match_result), ?::date, ?::int)";
         String firstNameW = whitePlayerImie.getText();
         String lastNameW = whitePlayerNazwisko.getText();
         String firstNameB = blackPlayerImie.getText();
@@ -75,12 +76,12 @@ public class AddGameController {
             return;
         }
         String res = resultChoiceBox.getValue();
-        if(res == null ) {
+        if (res == null) {
             showErrorAlert("Błąd", "Musisz wprowadzić wynik meczu");
             return;
         }
         LocalDate selectedDate = dateOfMatch.getValue();
-        if(selectedDate == null) {
+        if (selectedDate == null) {
             showErrorAlert("Błąd", "Musisz wprowadzić datę meczu");
             return;
         }
@@ -88,27 +89,30 @@ public class AddGameController {
         System.out.println(formatted);
         String tournament = tournamentChoice.getValue();
         if (tournament == null || tournament.isEmpty())
-                tournament= "null";
+            tournament = "null";
+
         try (Connection con = DataBaseConfig.connect();
              PreparedStatement pst = con.prepareStatement(query)) {
-
             pst.setString(1, firstNameW);
             pst.setString(2, lastNameW);
             pst.setString(3, firstNameB);
             pst.setString(4, lastNameB);
-            pst.setString(5,res);
-            pst.setString(6,formatted);
-            pst.setString(7,tournament);
+            pst.setObject(5, res);
+            pst.setString(6, formatted);
+            if (tournament != "null")
+                pst.setString(7, tournament);
+            else
+                pst.setNull(7, Types.INTEGER);
 
-            try (ResultSet rs = pst.executeQuery()) {
-                showSuccessAlert("Sukces!", "Pomyślnie dodano mecz");
-            }
+            pst.executeUpdate();
 
         } catch (SQLException ex) {
             showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
             ex.printStackTrace();
+            //return false;
         }
     }
+
     @FXML
     void handleBackButton(ActionEvent event) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("mainMenu.fxml"));
@@ -121,6 +125,7 @@ public class AddGameController {
     void handleGameRecordButton(ActionEvent event) {
 
     }
+
     public void initialize() {
         result = FXCollections.observableArrayList();
         tournaments = FXCollections.observableArrayList();
@@ -156,6 +161,7 @@ public class AddGameController {
         resultChoiceBox.setItems(result);
         tournamentChoice.setItems(tournaments);
     }
+
     private void showErrorAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -163,6 +169,7 @@ public class AddGameController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
     private void showSuccessAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
