@@ -19,6 +19,29 @@ CREATE TABLE PTDB4.players
     max_elo integer not null
 );
 
+CREATE VIEW PTDB4.player_insert_view AS
+SELECT p.id, p.first_name, p.last_name, g.group_name, p.max_elo
+FROM PTDB4.players p
+JOIN PTDB4.groups g ON p.group_id = g.id
+WHERE 1 = 0;
+
+CREATE OR REPLACE FUNCTION in_player()
+    RETURNS TRIGGER AS
+$$
+DECLARE group_id_var integer;
+BEGIN
+   SELECT id INTO group_id_var FROM PTDB4.groups WHERE group_name = NEW.group_name;
+   INSERT INTO PTDB4.players (id, first_name, last_name, group_id, max_elo)
+   VALUES (NEW.id, NEW.first_name, NEW.last_name, group_id_var, NEW.max_elo);
+   RETURN NEW;
+END;
+$$
+language plpgsql;
+
+CREATE TRIGGER new_player_view
+INSTEAD OF INSERT ON PTDB4.player_insert_view
+FOR EACH ROW EXECUTE FUNCTION in_player();
+
 CREATE OR REPLACE FUNCTION player_up()
     RETURNS TRIGGER AS
 $$BEGIN
