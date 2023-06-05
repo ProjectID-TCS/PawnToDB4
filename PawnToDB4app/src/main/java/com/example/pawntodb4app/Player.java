@@ -4,9 +4,9 @@ public class Player {
     private final int id;
     private final String firstName;
     private final String lastName;
-    private final int groupId;
+    private final String groupId;
 
-    public Player(int id, String firstName, String lastName, int groupId) {
+    public Player(int id, String firstName, String lastName, String groupId) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -25,7 +25,7 @@ public class Player {
         return lastName;
     }
 
-    public int getGroupId() {
+    public String getGroupId() {
         return groupId;
     }
 

@@ -6,11 +6,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class AddPlayerController {
     ObservableList<String> options;
@@ -63,15 +69,15 @@ public class AddPlayerController {
     private void addPlayer(String firstName, String lastName, int elo) {
         //TODO add player do db
     }
+
     public void initialize() {
         options = FXCollections.observableArrayList();
-        try (Connection con = DataBaseConfig.connect()){
+        try (Connection con = DataBaseConfig.connect()) {
             String query = "SELECT group_name FROM PTDB4.GROUPS";
-            try(Statement statement = con.createStatement();
-                ResultSet resultSet = statement.executeQuery(query)){
-                while(resultSet.next()){
+            try (Statement statement = con.createStatement();
+                 ResultSet resultSet = statement.executeQuery(query)) {
+                while (resultSet.next()) {
                     String item = resultSet.getString("group_name");
-                    System.out.println("siema "+ item);
                     options.add(item);
                 }
             }
@@ -83,6 +89,7 @@ public class AddPlayerController {
         groupChoiceBox.getItems().addAll(options);
         System.out.println(groupChoiceBox.getItems().size());
     }
+
     @FXML
     public void handleBackButton() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("mainMenu.fxml"));

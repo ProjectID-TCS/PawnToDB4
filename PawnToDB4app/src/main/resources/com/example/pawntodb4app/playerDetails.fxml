@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <GridPane xmlns:fx="http://javafx.com/fxml/1"
@@ -7,10 +11,6 @@
           xmlns="http://javafx.com/javafx/8"
           hgap="10" vgap="10"
           alignment="CENTER">
-    <HBox alignment="CENTER" GridPane.rowIndex="0">
-        <Label text="Id: "/>
-        <Label fx:id="idField"/>
-    </HBox>
     <HBox alignment="CENTER" GridPane.rowIndex="1">
         <Label text="Imię: "/>
         <Label fx:id="firstNameField"/>
@@ -23,7 +23,21 @@
         <Label text="Grupa: "/>
         <Label fx:id="groupField"/>
     </HBox>
-    <HBox alignment="CENTER" GridPane.rowIndex="4">
+    <VBox alignment="CENTER" GridPane.rowIndex="4">
+        <LineChart fx:id="eloChart" title="Historia elo">
+            <xAxis>
+                <CategoryAxis side="BOTTOM" label="data"/>
+            </xAxis>
+            <yAxis>
+                <NumberAxis side="LEFT" label="ELO"/>
+            </yAxis>
+        </LineChart>
+    </VBox>
+
+    <HBox alignment="CENTER" GridPane.rowIndex="5">
         <Button text="Zamknij" onAction="#handleCloseButton"/>
+        <GridPane.margin>
+            <Insets bottom="10"/>
+        </GridPane.margin>
     </HBox>
 </GridPane>

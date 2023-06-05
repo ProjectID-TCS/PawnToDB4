@@ -52,16 +52,20 @@ public class SearchPlayerController {
 
             PlayerDetailsController controller = loader.getController();
             controller.setPlayer(player);
+            controller.loadChartData(player.getId());
 
             Stage stage = new Stage();
             stage.setTitle("Szczegóły Gracza");
-            stage.setScene(new Scene(root, 400, 300));
+            stage.setScene(new Scene(root, 1000, 800));
             stage.show();
         }
     }
 
     private Player searchPlayer(String firstName, String lastName) {
-        String query = "SELECT * FROM PTDB4.players WHERE first_name = ? AND last_name = ?";
+        String query = "SELECT p.id, p.first_name, p.last_name, g.group_name " +
+                "FROM PTDB4.players p " +
+                "JOIN PTDB4.groups g ON p.group_id = g.id " +
+                "WHERE p.first_name = ? AND p.last_name = ?";
 
         try (Connection con = DataBaseConfig.connect();
              PreparedStatement pst = con.prepareStatement(query)) {
@@ -73,7 +77,7 @@ public class SearchPlayerController {
                 if (rs.next()) {
                     return new Player(rs.getInt("id"),
                             rs.getString("first_name"),
-                            rs.getString("last_name"), rs.getInt("group_id"));
+                            rs.getString("last_name"), rs.getString("group_name"));
                 }
             }
 
