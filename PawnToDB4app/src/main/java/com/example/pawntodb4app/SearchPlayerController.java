@@ -66,25 +66,6 @@ public class SearchPlayerController {
                 "FROM PTDB4.players p " +
                 "JOIN PTDB4.groups g ON p.group_id = g.id " +
                 "WHERE p.first_name = ? AND p.last_name = ?";
-
-        try (Connection con = DataBaseConfig.connect();
-             PreparedStatement pst = con.prepareStatement(query)) {
-
-            pst.setString(1, firstName);
-            pst.setString(2, lastName);
-
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return new Player(rs.getInt("id"),
-                            rs.getString("first_name"),
-                            rs.getString("last_name"), rs.getString("group_name"));
-                }
-            }
-
-        } catch (SQLException ex) {
-            showAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
-            ex.printStackTrace();
-        }
         return null;
     }
 

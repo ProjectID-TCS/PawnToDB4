@@ -1,65 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
 
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
-            minWidth="-Infinity"
-            prefHeight="373.0" prefWidth="527.0" xmlns="http://javafx.com/javafx/19"
-            fx:controller="com.example.pawntodb4app.AddGameController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="373.0" prefWidth="527.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pawntodb4app.AddGameController">
     <center>
         <GridPane BorderPane.alignment="CENTER">
             <columnConstraints>
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
-                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
             </columnConstraints>
             <rowConstraints>
-                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
             </rowConstraints>
             <children>
-                <TextField fx:id="whitePlayerFielld" prefHeight="26.0" prefWidth="141.0" promptText="Gracz"/>
-                <TextField fx:id="blackPlayerField" promptText="Gracz" GridPane.columnIndex="2"/>
-                <ChoiceBox prefHeight="26.0" prefWidth="107.0" GridPane.columnIndex="1" GridPane.halignment="CENTER"
-                           GridPane.valignment="CENTER"/>
+                <TextField fx:id="whitePlayerImie" prefHeight="26.0" prefWidth="141.0" promptText="Imie" />
+            <TextField fx:id="whitePlayerNazwisko" alignment="BOTTOM_LEFT" layoutX="362.0" layoutY="60.0" promptText="Nazwisko" GridPane.valignment="BOTTOM">
+               <GridPane.margin>
+                  <Insets bottom="10.0" />
+               </GridPane.margin>
+            </TextField>
+                <ChoiceBox fx:id="resultChoiceBox" prefHeight="26.0" prefWidth="107.0" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+                <TextField fx:id="blackPlayerImie" promptText="Imię" GridPane.columnIndex="2" />
+            <TextField fx:id="blackPlayerNazwisko" layoutX="362.0" layoutY="60.0" promptText="Nazwisko" GridPane.columnIndex="2" GridPane.valignment="BOTTOM">
+               <GridPane.margin>
+                  <Insets bottom="10.0" />
+               </GridPane.margin>
+            </TextField>
+            <DatePicker fx:id="dateOfMatch" promptText="Wybierz datę" GridPane.rowIndex="1" />
                 <Label alignment="TOP_CENTER" text="Białe" GridPane.halignment="CENTER" GridPane.valignment="TOP">
                     <GridPane.margin>
-                        <Insets top="10.0"/>
+                        <Insets top="10.0" />
                     </GridPane.margin>
                 </Label>
                 <Label text="Czarne" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.valignment="TOP">
                     <opaqueInsets>
-                        <Insets/>
+                        <Insets />
                     </opaqueInsets>
                     <GridPane.margin>
-                        <Insets top="10.0"/>
+                        <Insets top="10.0" />
                     </GridPane.margin>
                 </Label>
                 <Label text="Wynik" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="TOP">
                     <GridPane.margin>
-                        <Insets top="10.0"/>
+                        <Insets top="10.0" />
                     </GridPane.margin>
                 </Label>
                 <Label text="Data" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="TOP">
                     <GridPane.margin>
-                        <Insets top="10.0"/>
+                        <Insets top="10.0" />
                     </GridPane.margin>
                 </Label>
                 <Label text="Turniej" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="TOP">
                     <GridPane.margin>
-                        <Insets top="10.0"/>
+                        <Insets top="10.0" />
                     </GridPane.margin>
                 </Label>
-                <Button fx:id="gameRecordButton" mnemonicParsing="false" onAction="#handleGameRecordButton"
-                        text="Szczegóły gry" GridPane.columnIndex="2" GridPane.halignment="CENTER"
-                        GridPane.rowIndex="1"/>
-                <TextField promptText="Data meczu" GridPane.rowIndex="1"/>
-                <TextField promptText="(nieobowiązkowe)" GridPane.rowIndex="2"/>
-                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBackButton" prefHeight="26.0"
-                        prefWidth="183.0" text="Wróć do Menu Głównego" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+            <ChoiceBox fx:id="tournamentChoice" prefWidth="150.0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
+                <Button fx:id="gameRecordButton" mnemonicParsing="false" onAction="#handleGameRecordButton" text="Szczegóły gry" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="1" />
+                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBackButton" prefHeight="26.0" prefWidth="183.0" text="Wróć do Menu Głównego" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+            <Button fx:id="gameAddButton" mnemonicParsing="false" onAction="#handleAddButton" text="Dodaj" textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
             </children>
         </GridPane>
     </center>

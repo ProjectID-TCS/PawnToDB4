@@ -1,7 +1,9 @@
 package com.example.pawntodb4app;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -20,6 +22,7 @@ import java.sql.Statement;
 
 public class AddPlayerController {
     ObservableList<String> options;
+    FilteredList<String> filteredOptions;
     @FXML
     private TextField firstNameField;
 
@@ -43,17 +46,17 @@ public class AddPlayerController {
         String lastName = lastNameField.getText();
         String eloString = eloField.getText();
         if (firstName == null || firstName.isEmpty()) {
-            showAlert("Błąd", "Imię nie może być puste");
+            showErrorAlert("Błąd", "Imię Gracza nie może być puste");
             return;
         }
 
         if (lastName == null || lastName.isEmpty()) {
-            showAlert("Błąd", "Nazwisko nie może być puste");
+            showErrorAlert("Błąd", "Nazwisko Gracza nie może być puste");
             return;
         }
 
         if (eloString == null || eloString.isEmpty()) {
-            showAlert("Błąd", "ELO nie może być puste");
+            showErrorAlert("Błąd", "ELO Gracza nie może być puste");
             return;
         }
 
@@ -61,7 +64,7 @@ public class AddPlayerController {
         try {
             elo = Integer.parseInt(eloString);
         } catch (NumberFormatException e) {
-            showAlert("Błąd", "ELO musi być liczbą całkowitą");
+            showErrorAlert("Błąd", "ELO musi być liczbą całkowitą");
         }
 
     }
@@ -71,6 +74,7 @@ public class AddPlayerController {
     }
 
     public void initialize() {
+        groupChoiceBox.setEditable(true);
         options = FXCollections.observableArrayList();
         try (Connection con = DataBaseConfig.connect()) {
             String query = "SELECT group_name FROM PTDB4.GROUPS";
@@ -83,11 +87,22 @@ public class AddPlayerController {
             }
 
         } catch (SQLException ex) {
-            showAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
+            showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
             ex.printStackTrace();
         }
-        groupChoiceBox.getItems().addAll(options);
+        filteredOptions = new FilteredList<>(options, p -> true);
         System.out.println(groupChoiceBox.getItems().size());
+        groupChoiceBox.getEditor().textProperty().addListener((obs,oldV,newV) -> {
+            final TextField ed = groupChoiceBox.getEditor();
+            final String selected = groupChoiceBox.getSelectionModel().getSelectedItem();
+            Platform.runLater(() ->{
+                if(selected == null || selected.equals(ed.getText())) {
+                    filteredOptions.setPredicate(( item ->
+                            item.toUpperCase().startsWith(newV.toUpperCase())));
+                }
+            });
+        });
+        groupChoiceBox.setItems(filteredOptions);
     }
 
     @FXML
@@ -99,8 +114,15 @@ public class AddPlayerController {
         stage.setScene(new Scene(root, 320, 240));
     }
 
-    private void showAlert(String title, String message) {
+    private void showErrorAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    private void showSuccessAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
