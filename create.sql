@@ -41,7 +41,18 @@ CREATE TABLE PTDB4.elo
     elo         integer check (elo > 0 and elo < 3400)
 --     unique (player_id, acquired_on)
 );
+CREATE OR REPLACE FUNCTION new_player()
+    RETURNS TRIGGER AS
+$$BEGIN
+    insert into PTDB4.elo values (new.id,'2021-09-18',new.max_elo);
+    return new;
+end;
+$$
+language plpgsql;
 
+CREATE TRIGGER new_player
+    AFTER INSERT ON PTDB4.players
+    FOR EACH ROW EXECUTE PROCEDURE new_player();
 CREATE OR REPLACE FUNCTION max_elo_update()
     RETURNS TRIGGER AS
 $$
@@ -154,8 +165,8 @@ $$
 declare
     move record;
 BEGIN
-    for move in (select move_number, move_W, move_B from PTDB4.openings where id = openings.opening_id) loop
-
+    for move in (select op.move_number, op.move_W, op.move_B from PTDB4.openings op where id = op.opening_id) loop
+        --todo
         end loop;
 end;
 $$
@@ -186,10 +197,14 @@ begin
         end if;
         end loop;
     end if;
+    return new;
 end;
 $$
 language plpgsql;
 
+create trigger opening_chck
+    before insert or update on PTDB4.game_record
+    for each row execute procedure opening_chck();
 create or replace function moves_chck()
     returns trigger as
 $$BEGIN
@@ -198,6 +213,11 @@ $$BEGIN
 end;
 $$
 language plpgsql;
+
+create or replace trigger moves_chck
+    before insert or update on PTDB4.moves_record
+    for each row execute procedure moves_chck();
+
 CREATE INDEX each_game ON PTDB4.moves_record (game_id);
 
 CREATE TABLE PTDB4.pairings
@@ -264,6 +284,7 @@ DECLARE
     eloB int;
     updatedElo int[];
 BEGIN
+
     eloB = (select elo.elo from PTDB4.elo where player_id = new.black order by acquired_on limit 1);
     eloW = (select elo.elo from PTDB4.elo where player_id = new.white order by acquired_on limit 1);
     if new.result = 'W' then
@@ -298,6 +319,8 @@ CREATE TABLE PTDB4.player_tournament
     player_id     integer NOT NULL REFERENCES ptdb4.players,
     tournament_id integer NOT NULL REFERENCES ptdb4.tournaments
 );
+
+
 
 COPY PTDB4.groups (id, group_name) FROM stdin;
 1	Red

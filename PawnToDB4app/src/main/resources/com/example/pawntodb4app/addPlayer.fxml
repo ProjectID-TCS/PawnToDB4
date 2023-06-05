@@ -32,7 +32,7 @@
                 <TextField fx:id="firstNameField" maxWidth="150.0" prefWidth="150.0" promptText="Imię" />
                 <TextField fx:id="lastNameField" maxWidth="150.0" prefWidth="150.0" promptText="Nazwisko" GridPane.rowIndex="1" />
                 <TextField fx:id="eloField" maxWidth="150.0" prefWidth="150.0" promptText="ELO" GridPane.columnIndex="1" />
-            <ComboBox fx:id="groupChoiceBox" editable="true" prefWidth="150.0" promptText="grupa" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <ComboBox fx:id="groupChoiceBox" editable="true" prefWidth="150.0" promptText="Drużyna" GridPane.columnIndex="1" GridPane.rowIndex="1" />
             </children>
         </GridPane>
     </center>
