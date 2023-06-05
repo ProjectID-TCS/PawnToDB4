@@ -20,7 +20,7 @@ CREATE TABLE PTDB4.players
 );
 
 CREATE VIEW PTDB4.player_insert_view AS
-SELECT p.id, p.first_name, p.last_name, g.group_name, p.max_elo
+SELECT p.first_name, p.last_name, g.group_name, p.max_elo
 FROM PTDB4.players p
 JOIN PTDB4.groups g ON p.group_id = g.id
 WHERE 1 = 0;
@@ -31,8 +31,8 @@ $$
 DECLARE group_id_var integer;
 BEGIN
    SELECT id INTO group_id_var FROM PTDB4.groups WHERE group_name = NEW.group_name;
-   INSERT INTO PTDB4.players (id, first_name, last_name, group_id, max_elo)
-   VALUES (NEW.id, NEW.first_name, NEW.last_name, group_id_var, NEW.max_elo);
+   INSERT INTO PTDB4.players (first_name, last_name, group_id, max_elo)
+   VALUES (NEW.first_name, NEW.last_name, group_id_var, NEW.max_elo);
    RETURN NEW;
 END;
 $$

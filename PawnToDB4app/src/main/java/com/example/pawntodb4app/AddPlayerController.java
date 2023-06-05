@@ -15,10 +15,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class AddPlayerController {
     ObservableList<String> options;
@@ -45,6 +42,7 @@ public class AddPlayerController {
         String firstName = firstNameField.getText();
         String lastName = lastNameField.getText();
         String eloString = eloField.getText();
+        String group_name = groupChoiceBox.getValue();
         if (firstName == null || firstName.isEmpty()) {
             showErrorAlert("Błąd", "Imię Gracza nie może być puste");
             return;
@@ -60,18 +58,34 @@ public class AddPlayerController {
             return;
         }
 
-        int elo;
+        int elo = 0;
         try {
             elo = Integer.parseInt(eloString);
         } catch (NumberFormatException e) {
             showErrorAlert("Błąd", "ELO musi być liczbą całkowitą");
         }
-
+        if (addPlayer(firstName, lastName, elo, group_name))
+            showSuccessAlert("Dodano gracza", "Pomyślnie dodano gracza");
     }
 
-    private void addPlayer(String firstName, String lastName, int elo) {
-        //TODO add player do db
+    private boolean addPlayer(String firstName, String lastName, int elo, String groupName) {
+        String query = "INSERT INTO PTDB4.player_insert_view (first_name, last_name, max_elo, group_name) VALUES (?, ?, ?, ?)";
+
+        try (Connection con = DataBaseConfig.connect();
+             PreparedStatement pst = con.prepareStatement(query)) {
+            pst.setString(1, firstName);
+            pst.setString(2, lastName);
+            pst.setInt(3, elo);
+            pst.setString(4, groupName);
+            pst.executeUpdate();
+        } catch (SQLException ex) {
+            showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
+            ex.printStackTrace();
+            return false;
+        }
+        return true;
     }
+
 
     public void initialize() {
         groupChoiceBox.setEditable(true);
