@@ -15,16 +15,50 @@ CREATE TABLE PTDB4.players
     id         serial PRIMARY KEY,
     first_name varchar(20) NOT NULL,
     last_name  varchar(20) NOT NULL,
-    group_id   integer REFERENCES ptdb4.groups
+    group_id   integer REFERENCES ptdb4.groups,
+    max_elo integer not null
 );
 
+CREATE OR REPLACE FUNCTION player_up()
+    RETURNS TRIGGER AS
+$$BEGIN
+    new.id = old.id;
+    new.first_name = old.first_name;
+    new.last_name = old.last_name;
+    new.max_elo = old.max_elo;
+    return new;
+end;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER player_up
+    BEFORE UPDATE ON PTDB4.players
+    FOR EACH ROW EXECUTE PROCEDURE player_up();
 CREATE TABLE PTDB4.elo
 (
     player_id   integer references PTDB4.players (id),
     acquired_on date,
-    elo         integer check (elo > 0 and elo < 3400),
-    unique (player_id, acquired_on)
+    elo         integer check (elo > 0 and elo < 3400)
+--     unique (player_id, acquired_on)
 );
+
+CREATE OR REPLACE FUNCTION max_elo_update()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    IF new.elo > (
+        SELECT max_elo FROM players WHERE id = new.player_id
+    ) THEN
+        UPDATE players SET max_elo = new.elo WHERE id = new.player_id;
+    END IF;
+    RETURN new;
+END
+
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER max_elo_update
+    AFTER INSERT ON PTDB4.elo
+    FOR EACH ROW EXECUTE PROCEDURE max_elo_update();
 
 CREATE INDEX player_elo ON PTDB4.elo (player_id);
 
@@ -77,31 +111,31 @@ END;
 $$
 language plpgsql;
 
-CREATE TRIGGER insert_tournament
-    BEFORE INSERT OR UPDATE ON pairings
-    FOR EACH ROW EXECUTE PROCEDURE insert_tournament();
-
+CREATE TABLE PTDB4.opening_name
+(
+    id   serial PRIMARY KEY,
+    name varchar(20) NOT NULL
+);
 CREATE TABLE PTDB4.openings
 (
     id          serial PRIMARY KEY,
     opening_id  integer REFERENCES PTDB4.opening_name (id),
     move_number integer    NOT NULL,
     move_W      varchar(7) NOT NULL,
-    move_B      varchar(7) NOT NULL
+    move_B      varchar(7) NOT NULL,
+    unique(opening_id,move_number)
 );--no indexing, table will be relatively small
 
-CREATE TABLE PTDB4.opening_name
-(
-    id   serial PRIMARY KEY,
-    name varchar(20) NOT NULL
-);
 
 CREATE TABLE PTDB4.game_record
 (
     id          serial PRIMARY KEY,
-    game_id     integer      NOT NULL REFERENCES ptdb4.pairings,
-    game_result match_result NOT NULL,
-    ending      varchar(10)--possible ending conditions
+    game_result PTDB4.match_result NOT NULL,
+    ending      varchar(15) not null,--possible ending conditions
+    constraint check_reason
+    check (
+  (game_result IN ('W', 'B') AND ending IN ('resignation','mate','time')) OR
+  (game_result = 'D' AND ending IN ('agreement', 'time'))) -- if one has no way to mate, time over is a draw
 );
 
 CREATE TABLE PTDB4.moves_record
@@ -121,10 +155,14 @@ CREATE TABLE PTDB4.pairings
     white         integer      NOT NULL REFERENCES ptdb4.players,
     black         integer      NOT NULL REFERENCES ptdb4.players,
     tournament_id integer REFERENCES ptdb4.tournaments,
-    "result"      match_result NOT NULL,
+    "result"      PTDB4.match_result NOT NULL,
     match_date    date,
     id_record     integer REFERENCES ptdb4.game_record
 );
+
+CREATE TRIGGER insert_tournament
+    BEFORE INSERT OR UPDATE ON PTDB4.pairings
+    FOR EACH ROW EXECUTE PROCEDURE insert_tournament();
 
 CREATE OR REPLACE FUNCTION calculateElo(white int,black int,result int)
     RETURNS int[] AS
@@ -166,6 +204,7 @@ BEGIN
 END;
 $$
 language plpgsql;
+
 CREATE OR REPLACE FUNCTION elo_update()
     RETURNS TRIGGER AS
 $$
@@ -183,15 +222,15 @@ BEGIN
     else
         updatedElo = calculateElo(eloW,eloB,0);
     end if;
-    insert into PTDB4.elo values(new.black,new.date,updatedElo[2]);
-    insert into PTDB4.elo values(new.white,new.date,updatedElo[1]);
-
+    insert into PTDB4.elo values(new.black,new.match_date,updatedElo[2]);
+    insert into PTDB4.elo values(new.white,new.match_date,updatedElo[1]);
+    return new;
 END;
 $$
 language plpgsql;
 
 CREATE TRIGGER elo_update
-    AFTER INSERT OR UPDATE ON pairings
+    AFTER INSERT OR UPDATE ON PTDB4.pairings
     FOR EACH ROW EXECUTE PROCEDURE elo_update();
 
 CREATE INDEX each_tournament ON PTDB4.pairings (tournament_id);
@@ -232,157 +271,157 @@ COPY PTDB4.groups (id, group_name) FROM stdin;
 20	Sky   
 \.
 
-COPY PTDB4.players (id, first_name, last_name, group_id, elo, max_elo) FROM stdin;
-1	Haldorsen	Benjamin	15	2448	2570
-2	Tomashevsky	Evgeny	6	2705	2840
-3	Kozak	Adam	3	2445	2567
-4	Kovalev	Vladislav	4	2703	2838
-5	Mazur	Stefan	16	2441	2563
-6	Mamedov	Rauf	16	2701	2836
-7	Filip	Lucian-Ioan	20	2438	2560
-8	Ragger	Markus	14	2696	2831
-9	Kourkoulos-Arditis	Stamatis	2	2435	2557
-10	Korobov	Anton	13	2686	2820
-11	Tomazini	Zan	16	2431	2553
-12	Eljanov	Pavel	14	2682	2816
-13	Banzea	Alexandru-Bogdan	15	2427	2548
-14	Nisipeanu	Liviu-Dieter	17	2670	2804
-15	Radovanovic	Nikola	15	2426	2547
-16	Berkes	Ferenc	15	2666	2799
-17	Arsovic	Zoran	7	2422	2543
-18	Safarli	Eltaj	8	2662	2795
-19	Hnydiuk	Aleksander	18	2417	2538
-20	Edouard	Romain	11	2658	2791
-21	Tica	Sven	18	2416	2537
-22	Parligras	Mircea-Emilian	11	2657	2790
-23	Erdogdu	Mert	2	2413	2534
-24	Fressinet	Laurent	3	2652	2785
-25	Nikitenko	Mihail	18	2408	2528
-26	Alekseenko	Kirill	6	2644	2776
-27	Duzhakov	Ilya	14	2405	2525
-28	Anton	Guijarro David	17	2643	2775
-29	Gadimbayli	Abdulla	13	2404	2524
-30	Alekseev	Evgeny	2	2640	2772
-31	Zarubitski	Viachaslau	7	2404	2524
-32	Lysyj	Igor	1	2635	2767
-33	Drnovsek	Gal	1	2402	2522
-34	Hovhannisyan	Robert	12	2634	2766
-35	Osmak	Iulija	14	2399	2519
-36	Lagarde	Maxime	10	2631	2763
-37	Kamer	Kayra	11	2397	2517
-38	Gledura	Benjamin	8	2630	2762
-39	Di	Benedetto Edoardo	19	2394	2514
-40	Kobalia	Mikhail	4	2627	2758
-41	Saraci	Nderim	4	2391	2511
-42	Paravyan	David	6	2627	2758
-43	Kaasen	Tor Fredrik	6	2383	2502
-44	Jobava	Baadur	18	2622	2753
-45	Arsovic	Goran	17	2380	2499
-46	Van	Foreest Jorden	2	2621	2752
-47	Ayats	Llobera Gerard	18	2377	2496
-48	Kozul	Zdenko	12	2619	2750
-49	Zlatanovic	Boroljub	17	2376	2495
-50	Smirin	Ilia	17	2618	2749
-51	Drazic	Sinisa	4	2370	2489
-52	Martirosyan	Haik M.	6	2616	2747
-53	Stoyanov	Tsvetan	18	2370	2489
-54	Vocaturo	Daniele	1	2616	2747
-55	Kalogeris	Ioannis	18	2368	2486
-56	Chigaev	Maksim	16	2613	2744
-57	Serarols	Mabras Bernat	6	2363	2481
-58	Erdos	Viktor	9	2612	2743
-59	Mihajlov	Sebastian	8	2356	2474
-60	Lupulescu	Constantin	7	2611	2742
-61	Dimic	Pavle	19	2351	2469
-62	Predke	Alexandr	8	2611	2742
-63	Pogosyan	Stefan	19	2347	2464
-64	Goganov	Aleksey	9	2610	2741
-65	Oboladze	Luka	19	2340	2457
-66	Deac	Bogdan-Daniel	11	2609	2739
-67	Mitsis	Georgios	12	2338	2455
-68	Esipenko	Andrey	17	2603	2733
-69	Klabis	Rokas	16	2333	2450
-70	Moussard	Jules	12	2601	2731
-71	Radovanovic	Dusan	11	2331	2448
-72	Bartel	Mateusz	4	2600	2730
-73	Osmanodja	Filiz	11	2326	2442
-74	Antipov	Mikhail Al.	14	2594	2724
-75	Tsvetkov	Andrey	3	2322	2438
-76	Donchenko	Alexander	4	2593	2723
-77	Rabatin	Jakub	6	2313	2429
-78	Petrov	Nikita	5	2591	2721
-79	Tate	Alan	6	2306	2421
-80	Can	Emre	14	2586	2715
-81	Petkov	Momchil	16	2296	2411
-82	Nikolov	Momchil	6	2584	2713
-83	Antova	Gabriela	2	2286	2400
-84	Santos	Latasa Jaime	5	2582	2711
-85	Sokolovsky	Yahli	17	2278	2392
-86	Wagner	Dennis	10	2580	2709
-87	Ozenir	Ekin Baris	6	2265	2378
-88	Maze	Sebastien	18	2578	2707
-89	Martic	Zlatko	12	2261	2374
-90	Aleksandrov	Aleksej	11	2574	2703
-91	Gueci	Tea	19	2252	2365
-92	Djukic	Nikola	12	2572	2701
-93	Doncevic	Dario	13	2249	2361
-94	Meshkovs	Nikita	14	2568	2696
-95	Jarvenpaa	Jari	3	2243	2355
-96	Petrosyan	Manuel	10	2564	2692
-97	Ingebretsen	Jens E	10	2243	2355
-98	Alonso	Rosell Alvar	14	2559	2687
-99	Heinemann	Josefine	8	2238	2350
-100	Martinovic	Sasa	13	2558	2686
-101	Sukovic	Andrej	17	2235	2347
-102	Halkias	Stelios	15	2552	2680
-103	Milikow	Elie	4	2226	2337
-104	Kadric	Denis	2	2547	2674
-105	Tadic	Stefan	15	2223	2334
-106	Kulaots	Kaido	6	2544	2671
-107	Polatel	Ali	12	2220	2331
-108	Zhigalko	Andrey	2	2541	2668
-109	Stoinev	Metodi	5	2215	2326
-110	Stupak	Kirill	15	2537	2664
-111	Van	Dael Siem	2	2207	2317
-112	Gazik	Viktor	14	2535	2662
-113	Gunduz	Umut Erdem	10	2205	2315
-114	Kelires	Andreas	7	2529	2655
-115	Milikow	Yoav	12	2200	2310
-116	Lobanov	Sergei	13	2526	2652
-117	Karaoglan	Doruk	5	2197	2307
-118	Basso	Pier Luigi	3	2521	2647
-119	Martinkus	Rolandas	6	2185	2294
-120	Demidov	Mikhail	14	2520	2646
-121	Isik	Alparslan	14	2180	2289
-122	Potapov	Pavel	7	2517	2643
-123	Veleski	Robert	10	2177	2286
-124	Valsecchi	Alessio	7	2515	2641
-125	Chigaeva	Anastasia	4	2167	2275
-126	Zanan	Evgeny	17	2514	2640
-127	De	Seroux Camille	3	2160	2268
-128	Dragnev	Valentin	11	2511	2637
-129	Marinskii	Yurii	16	2156	2264
-130	Mirzoev	Emil	7	2511	2637
-131	Uruci	Besim	12	2137	2244
-132	Keymer	Vincent	5	2509	2634
-133	Sekelja	Marko	6	2120	2226
-134	Baron	Tal	4	2506	2631
-135	Aydincelebi	Kagan	15	2115	2221
-136	Quparadze	Giga	17	2501	2626
-137	Ivanova	Karina	18	2114	2220
-138	Neverov	Valeriy	6	2496	2621
-139	Tomashevskaya	Lidia	17	2112	2218
-140	Matviishen	Viktor	18	2490	2615
-141	Asllani	Muhamet	18	2105	2210
-142	Sargsyan	Shant	5	2488	2612
-143	Caglar	Sila	4	2094	2199
-144	Plenca	Jadranko	12	2487	2611
-145	Konstantinov	Aleksandar	14	2079	2183
-146	Fakhrutdinov	Timur	5	2485	2609
-147	Angun	Batu	1	2076	2180
-148	Studer	Noel	6	2479	2603
-149	Pantovic	Dragan M	13	2063	2166
-150	Livaic	Leon	19	2477	2601
+COPY PTDB4.players (id, first_name, last_name, group_id, max_elo) FROM stdin;
+1	Haldorsen	Benjamin	15	2448
+2	Tomashevsky	Evgeny	6	2705
+3	Kozak	Adam	3	2445
+4	Kovalev	Vladislav	4	2703
+5	Mazur	Stefan	16	2441
+6	Mamedov	Rauf	16	2701
+7	Filip	Lucian-Ioan	20	2438
+8	Ragger	Markus	14	2696
+9	Kourkoulos-Arditis	Stamatis	2	2435
+10	Korobov	Anton	13	2686
+11	Tomazini	Zan	16	2431
+12	Eljanov	Pavel	14	2682
+13	Banzea	Alexandru-Bogdan	15	2427
+14	Nisipeanu	Liviu-Dieter	17	2670
+15	Radovanovic	Nikola	15	2426
+16	Berkes	Ferenc	15	2666
+17	Arsovic	Zoran	7	2422
+18	Safarli	Eltaj	8	2662
+19	Hnydiuk	Aleksander	18	2417
+20	Edouard	Romain	11	2658
+21	Tica	Sven	18	2416
+22	Parligras	Mircea-Emilian	11	2657
+23	Erdogdu	Mert	2	2413
+24	Fressinet	Laurent	3	2652
+25	Nikitenko	Mihail	18	2408
+26	Alekseenko	Kirill	6	2644
+27	Duzhakov	Ilya	14	2405
+28	Anton	Guijarro-David	17	2643
+29	Gadimbayli	Abdulla	13	2404
+30	Alekseev	Evgeny	2	2640
+31	Zarubitski	Viachaslau	7	2404
+32	Lysyj	Igor	1	2635
+33	Drnovsek	Gal	1	2402
+34	Hovhannisyan	Robert	12	2634
+35	Osmak	Iulija	14	2399
+36	Lagarde	Maxime	10	2631
+37	Kamer	Kayra	11	2397
+38	Gledura	Benjamin	8	2630
+39	Di-Benedetto	Edoardo	19	2394
+40	Kobalia	Mikhail	4	2627
+41	Saraci	Nderim	4	2391
+42	Paravyan	David	6	2627
+43	Kaasen	Tor-Fredrik	6	2383
+44	Jobava	Baadur	18	2622
+45	Arsovic	Goran	17	2380
+46	Van-Foreest	Jorden	2	2621
+47	Ayats	Llobera-Gerard	18	2377
+48	Kozul	Zdenko	12	2619
+49	Zlatanovic	Boroljub	17	2376
+50	Smirin	Ilia	17	2618
+51	Drazic	Sinisa	4	2370
+52	Martirosyan	Haik-M.	6	2616
+53	Stoyanov	Tsvetan	18	2370
+54	Vocaturo	Daniele	1	2616
+55	Kalogeris	Ioannis	18	2368
+56	Chigaev	Maksim	16	2613
+57	Serarols	Mabras-Bernat	6	2363
+58	Erdos	Viktor	9	2612
+59	Mihajlov	Sebastian	8	2356
+60	Lupulescu	Constantin	7	2611
+61	Dimic	Pavle	19	2351
+62	Predke	Alexandr	8	2611
+63	Pogosyan	Stefan	19	2347
+64	Goganov	Aleksey	9	2610
+65	Oboladze	Luka	19	2340
+66	Deac	Bogdan-Daniel	11	2609
+67	Mitsis	Georgios	12	2338
+68	Esipenko	Andrey	17	2603
+69	Klabis	Rokas	16	2333
+70	Moussard	Jules	12	2601
+71	Radovanovic	Dusan	11	2331
+72	Bartel	Mateusz	4	2600
+73	Osmanodja	Filiz	11	2326
+74	Antipov	Mikhail-Al.	14	2594
+75	Tsvetkov	Andrey	3	2322
+76	Donchenko	Alexander	4	2593
+77	Rabatin	Jakub	6	2313
+78	Petrov	Nikita	5	2591
+79	Tate	Alan	6	2306
+80	Can	Emre	14	2586
+81	Petkov	Momchil	16	2296
+82	Nikolov	Momchil	6	2584
+83	Antova	Gabriela	2	2286
+84	Santos	Latasa-Jaime	5	2582
+85	Sokolovsky	Yahli	17	2278
+86	Wagner	Dennis	10	2580
+87	Ozenir	Ekin-Baris	6	2265
+88	Maze	Sebastien	18	2578
+89	Martic	Zlatko	12	2261
+90	Aleksandrov	Aleksej	11	2574
+91	Gueci	Tea	19	2252
+92	Djukic	Nikola	12	2572
+93	Doncevic	Dario	13	2249
+94	Meshkovs	Nikita	14	2568
+95	Jarvenpaa	Jari	3	2243
+96	Petrosyan	Manuel	10	2564
+97	Ingebretsen	Jens	10	2243
+98	Alonso	Rosell-Alvar	14	2559
+99	Heinemann	Josefine	8	2238
+100	Martinovic	Sasa	13	2558
+101	Sukovic	Andrej	17	2235
+102	Halkias	Stelios	15	2552
+103	Milikow	Elie	4	2226
+104	Kadric	Denis	2	2547
+105	Tadic	Stefan	15	2223
+106	Kulaots	Kaido	6	2544
+107	Polatel	Ali	12	2220
+108	Zhigalko	Andrey	2	2541
+109	Stoinev	Metodi	5	2215
+110	Stupak	Kirill	15	2537
+111	Van-Dael	Siem	2	2207
+112	Gazik	Viktor	14	2535
+113	Gunduz	Umut-Erdem	10	2205
+114	Kelires	Andreas	7	2529
+115	Milikow	Yoav	12	2200
+116	Lobanov	Sergei	13	2526
+117	Karaoglan	Doruk	5	2197
+118	Basso	Pier-Luigi	3	2521
+119	Martinkus	Rolandas	6	2185
+120	Demidov	Mikhail	14	2520
+121	Isik	Alparslan	14	2180
+122	Potapov	Pavel	7	2517
+123	Veleski	Robert	10	2177
+124	Valsecchi	Alessio	7	2515
+125	Chigaeva	Anastasia	4	2167
+126	Zanan	Evgeny	17	2514
+127	De-Seroux	Camille	3	2160
+128	Dragnev	Valentin	11	2511
+129	Marinskii	Yurii	16	2156
+130	Mirzoev	Emil	7	2511
+131	Uruci	Besim	12	2137
+132	Keymer	Vincent	5	2509
+133	Sekelja	Marko	6	2120
+134	Baron	Tal	4	2506
+135	Aydincelebi	Kagan	15	2115
+136	Quparadze	Giga	17	2501
+137	Ivanova	Karina	18	2114
+138	Neverov	Valeriy	6	2496
+139	Tomashevskaya	Lidia	17	2112
+140	Matviishen	Viktor	18	2490
+141	Asllani	Muhamet	18	2105
+142	Sargsyan	Shant	5	2488
+143	Caglar	Sila	4	2094
+144	Plenca	Jadranko	12	2487
+145	Konstantinov	Aleksandar	14	2079
+146	Fakhrutdinov	Timur	5	2485
+147	Angun	Batu	1	2076
+148	Studer	Noel	6	2479
+149	Pantovic	Dragan-M	13	2063
+150	Livaic	Leon	19	2477
 \.
 
 COPY PTDB4.pairings (id, white, black, result, match_date) from stdin;
@@ -406,7 +445,7 @@ COPY PTDB4.pairings (id, white, black, result, match_date) from stdin;
 27	41	81	D	2021-09-27
 28	114	16	D	2021-09-27
 29	39	67	W	2021-09-27
-30	32	91	W	2021-09-27  
+30	32	91	W	2021-09-27
 31	45	96	D	2021-09-27
 32	30	84	W	2021-09-27
 33	35	25	D	2021-09-27
@@ -699,15 +738,15 @@ COPY PTDB4.pairings (id, white, black, result, match_date) from stdin;
 -- 9	1. d4 f5 2. c4 Nf6 3. g3 e6 4. Bg2 Be7 5. Nf3 O-O 6. O-O Ne4 7. Nbd2 Bf6 8. Qc2 d5 9. b3 c5 10. cxd5 exd5
 -- \.
 
-COPY PTDB4.game_record (id, id_record, game_result) from stdin;
-1	9	W
-2	8	W
-3	7	D
-4	6	W
-5	5	D
-6	4	B
-7	3	B
-8	2	D
+COPY PTDB4.game_record (id, game_result,ending) from stdin;
+1	W	resignation
+2	W	mate
+3	D	agreement
+4	W	resignation
+5	D	time
+6	B	resignation
+7	B	time
+8	D	time
 \.
 
 COPY PTDB4.pairings (id, white, black, result, match_date, id_record) from stdin;
@@ -729,33 +768,26 @@ COPY PTDB4.formats (id, name) FROM stdin;
 5	Scheveningen System
 \.
 
-COPY PTDB4.openings (id, first_moves, name) FROM stdin;
-1   1   1   e4  Nf6
-2   2   1   d4  Nf6
-3   3   1   d4  e5
-4   4   1   e4  d5
-5   5   1   e4  c5
-6   6   1   e4  e6
-7   7   1   g3  d5
-8   8   1   d4  d5
+COPY PTDB4.opening_name (id, name) FROM stdin;
+1	Alekhine Defence
+2	Indian Defence
+3	Englund Gambit
+4	Scandinavian Defence
+5	Sicilian Defence
+6	French Defence
+7	Hungarian Defence
+8	Queens Pawn Game
 \.
 
-COPY PTDB4.opening_name (id, name) FROM stdin;
-1   Alekhine Defence
-2   Indian Defence
-3   Englund Gambit
-4   Scandinavian Defence
-5   Sicilian Defence
-6   French Defence
-7   Hungarian Defence
-8   Queens Pawn Game
-
-COPY PTDB4.places (id, country, city_id) FROM stdin;
-1	Poland	1
-2	Poland	2
-3	Australia	3
-4	United States	4
-5	Austria	5
+COPY PTDB4.openings (id, opening_id,move_number, move_W,move_B) FROM stdin;
+1	1	1	e4	Nf6
+2	2	1	d4	Nf6
+3	3	1	d4	e5
+4	4	1	e4	d5
+5	5	1	e4	c5
+6	6	1	e4	e6
+7	7	1	g3	d5
+8	8	1	d4	d5
 \.
 
 COPY PTDB4.cities (id, city, street, street_number) FROM stdin;
@@ -764,6 +796,16 @@ COPY PTDB4.cities (id, city, street, street_number) FROM stdin;
 3	Vienna	Kaiser st.	112
 4	Washington DC	White House	1
 5	Sydney	Hobbit st.	214
+\.
+COPY PTDB4.places (id, country, city_id) FROM stdin;
+1	Poland	1
+2	Poland	2
+3	Australia	3
+4	United States	4
+5	Austria	5
+\.
+
+
 
 COPY PTDB4.tournaments (id, name, format, place, start_date, end_date) FROM stdin;
 1	TCS Cup	1	3	2019.04.30	2023.05.12
