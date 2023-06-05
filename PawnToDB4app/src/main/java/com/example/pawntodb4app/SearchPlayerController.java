@@ -90,7 +90,7 @@ public class SearchPlayerController {
         Parent root = loader.load();
 
         Stage stage = (Stage) backButton.getScene().getWindow();
-        stage.setScene(new Scene(root, 800, 600));
+        stage.setScene(new Scene(root, 320, 240));
     }
 
     private void showAlert(String title, String message) {

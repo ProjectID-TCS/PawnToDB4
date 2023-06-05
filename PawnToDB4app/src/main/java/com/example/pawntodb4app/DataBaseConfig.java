@@ -10,6 +10,7 @@ public class DataBaseConfig {
 
     public static Connection connect() {
         try {
+            System.out.println("siemaaa");
             return DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (Exception e) {
             System.out.println("Nie udało sie połaczyc z baza.");

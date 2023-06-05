@@ -111,27 +111,29 @@ END;
 $$
 language plpgsql;
 
-CREATE TABLE PTDB4.opening_name
-(
-    id   serial PRIMARY KEY,
-    name varchar(20) NOT NULL
-);
+
+
 CREATE TABLE PTDB4.openings
 (
     id          serial PRIMARY KEY,
-    opening_id  integer REFERENCES PTDB4.opening_name (id),
     move_number integer    NOT NULL,
     move_W      varchar(7) NOT NULL,
     move_B      varchar(7) NOT NULL,
-    unique(opening_id,move_number)
+    unique(id,move_number)
 );--no indexing, table will be relatively small
 
+CREATE TABLE PTDB4.opening_name
+(
+    id   integer references PTDB4.openings not null unique,
+    name varchar(20) NOT NULL
+);
 
 CREATE TABLE PTDB4.game_record
 (
     id          serial PRIMARY KEY,
     game_result PTDB4.match_result NOT NULL,
     ending      varchar(15) not null,--possible ending conditions
+    opening     int references PTDB4.openings(id)
     constraint check_reason
     check (
   (game_result IN ('W', 'B') AND ending IN ('resignation','mate','time')) OR
@@ -146,7 +148,56 @@ CREATE TABLE PTDB4.moves_record
     move_W      varchar(7), --if there are 3 knights on the board it is possible to need 7 characters to describe one move.
     move_B      varchar(7)  --it would be for example "Nd1xc3#". Black can be null if game ended on white move
 );
+create or replace function fill_moves(id int,opening_id int)
+    returns void as
+$$
+declare
+    move record;
+BEGIN
+    for move in (select move_number, move_W, move_B from PTDB4.openings where id = openings.opening_id) loop
 
+        end loop;
+end;
+$$
+language plpgsql;
+create or replace function opening_chck()
+    returns trigger as
+$$
+declare
+    move_opening record;
+    move record;
+begin
+    if new.opening is not null then -- opening
+    for move_opening in select move_number, move_W,move_B from PTDB4.openings o where id = new.opening loop
+        if (select move_W, move_B from ptdb4.moves_record where game_id = new.id) is not null then
+            select mr.move_W, mr.move_B from ptdb4.moves_record mr where game_id = new.id and mr.move_number = move_opening.move_number into move;
+            if move.move_b <> move_opening.move_b or move.move_w <> move_opening.move_w then
+                new.opening := null;
+                return new;
+            end if;
+        else
+            if move_opening.move_number = 1 then
+            select fill_moves(new.id,new.opening);
+            return new;
+            else
+                new.opening := null;
+                return new;
+            end if;
+        end if;
+        end loop;
+    end if;
+end;
+$$
+language plpgsql;
+
+create or replace function moves_chck()
+    returns trigger as
+$$BEGIN
+
+    return new;
+end;
+$$
+language plpgsql;
 CREATE INDEX each_game ON PTDB4.moves_record (game_id);
 
 CREATE TABLE PTDB4.pairings
@@ -768,6 +819,17 @@ COPY PTDB4.formats (id, name) FROM stdin;
 5	Scheveningen System
 \.
 
+COPY PTDB4.openings (id,move_number, move_W,move_B) FROM stdin;
+1	1	e4	Nf6
+2	1	d4	Nf6
+3	1	d4	e5
+4	1	e4	d5
+5	1	e4	c5
+6	1	e4	e6
+7	1	g3	d5
+8	1	d4	d5
+\.
+
 COPY PTDB4.opening_name (id, name) FROM stdin;
 1	Alekhine Defence
 2	Indian Defence
@@ -777,17 +839,6 @@ COPY PTDB4.opening_name (id, name) FROM stdin;
 6	French Defence
 7	Hungarian Defence
 8	Queens Pawn Game
-\.
-
-COPY PTDB4.openings (id, opening_id,move_number, move_W,move_B) FROM stdin;
-1	1	1	e4	Nf6
-2	2	1	d4	Nf6
-3	3	1	d4	e5
-4	4	1	e4	d5
-5	5	1	e4	c5
-6	6	1	e4	e6
-7	7	1	g3	d5
-8	8	1	d4	d5
 \.
 
 COPY PTDB4.cities (id, city, street, street_number) FROM stdin;
