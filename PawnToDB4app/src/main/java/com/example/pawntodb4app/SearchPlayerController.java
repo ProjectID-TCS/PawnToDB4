@@ -56,7 +56,7 @@ public class SearchPlayerController {
 
             Stage stage = new Stage();
             stage.setTitle("Szczegóły Gracza");
-            stage.setScene(new Scene(root, 1000, 800));
+            stage.setScene(new Scene(root, 1000, 700));
             stage.show();
         }
     }
@@ -64,7 +64,7 @@ public class SearchPlayerController {
     private Player searchPlayer(String firstName, String lastName) {
         String query = "SELECT p.id, p.first_name, p.last_name, g.group_name " +
                 "FROM PTDB4.players p " +
-                "JOIN PTDB4.groups g ON p.group_id = g.id " +
+                "LEFT OUTER JOIN PTDB4.groups g ON p.group_id = g.id " +
                 "WHERE p.first_name = ? AND p.last_name = ?";
         try (Connection con = DataBaseConfig.connect();
              PreparedStatement pst = con.prepareStatement(query)) {
