@@ -368,157 +368,157 @@ COPY PTDB4.groups (id, group_name) FROM stdin;
 20	Sky   
 \.
 
-COPY PTDB4.players (id, first_name, last_name, group_id, max_elo) FROM stdin;
-1	Haldorsen	Benjamin	15	2448
-2	Tomashevsky	Evgeny	6	2705
-3	Kozak	Adam	3	2445
-4	Kovalev	Vladislav	4	2703
-5	Mazur	Stefan	16	2441
-6	Mamedov	Rauf	16	2701
-7	Filip	Lucian-Ioan	20	2438
-8	Ragger	Markus	14	2696
-9	Kourkoulos-Arditis	Stamatis	2	2435
-10	Korobov	Anton	13	2686
-11	Tomazini	Zan	16	2431
-12	Eljanov	Pavel	14	2682
-13	Banzea	Alexandru-Bogdan	15	2427
-14	Nisipeanu	Liviu-Dieter	17	2670
-15	Radovanovic	Nikola	15	2426
-16	Berkes	Ferenc	15	2666
-17	Arsovic	Zoran	7	2422
-18	Safarli	Eltaj	8	2662
-19	Hnydiuk	Aleksander	18	2417
-20	Edouard	Romain	11	2658
-21	Tica	Sven	18	2416
-22	Parligras	Mircea-Emilian	11	2657
-23	Erdogdu	Mert	2	2413
-24	Fressinet	Laurent	3	2652
-25	Nikitenko	Mihail	18	2408
-26	Alekseenko	Kirill	6	2644
-27	Duzhakov	Ilya	14	2405
-28	Anton	Guijarro-David	17	2643
-29	Gadimbayli	Abdulla	13	2404
-30	Alekseev	Evgeny	2	2640
-31	Zarubitski	Viachaslau	7	2404
-32	Lysyj	Igor	1	2635
-33	Drnovsek	Gal	1	2402
-34	Hovhannisyan	Robert	12	2634
-35	Osmak	Iulija	14	2399
-36	Lagarde	Maxime	10	2631
-37	Kamer	Kayra	11	2397
-38	Gledura	Benjamin	8	2630
-39	Di-Benedetto	Edoardo	19	2394
-40	Kobalia	Mikhail	4	2627
-41	Saraci	Nderim	4	2391
-42	Paravyan	David	6	2627
-43	Kaasen	Tor-Fredrik	6	2383
-44	Jobava	Baadur	18	2622
-45	Arsovic	Goran	17	2380
-46	Van-Foreest	Jorden	2	2621
-47	Ayats	Llobera-Gerard	18	2377
-48	Kozul	Zdenko	12	2619
-49	Zlatanovic	Boroljub	17	2376
-50	Smirin	Ilia	17	2618
-51	Drazic	Sinisa	4	2370
-52	Martirosyan	Haik-M.	6	2616
-53	Stoyanov	Tsvetan	18	2370
-54	Vocaturo	Daniele	1	2616
-55	Kalogeris	Ioannis	18	2368
-56	Chigaev	Maksim	16	2613
-57	Serarols	Mabras-Bernat	6	2363
-58	Erdos	Viktor	9	2612
-59	Mihajlov	Sebastian	8	2356
-60	Lupulescu	Constantin	7	2611
-61	Dimic	Pavle	19	2351
-62	Predke	Alexandr	8	2611
-63	Pogosyan	Stefan	19	2347
-64	Goganov	Aleksey	9	2610
-65	Oboladze	Luka	19	2340
-66	Deac	Bogdan-Daniel	11	2609
-67	Mitsis	Georgios	12	2338
-68	Esipenko	Andrey	17	2603
-69	Klabis	Rokas	16	2333
-70	Moussard	Jules	12	2601
-71	Radovanovic	Dusan	11	2331
-72	Bartel	Mateusz	4	2600
-73	Osmanodja	Filiz	11	2326
-74	Antipov	Mikhail-Al.	14	2594
-75	Tsvetkov	Andrey	3	2322
-76	Donchenko	Alexander	4	2593
-77	Rabatin	Jakub	6	2313
-78	Petrov	Nikita	5	2591
-79	Tate	Alan	6	2306
-80	Can	Emre	14	2586
-81	Petkov	Momchil	16	2296
-82	Nikolov	Momchil	6	2584
-83	Antova	Gabriela	2	2286
-84	Santos	Latasa-Jaime	5	2582
-85	Sokolovsky	Yahli	17	2278
-86	Wagner	Dennis	10	2580
-87	Ozenir	Ekin-Baris	6	2265
-88	Maze	Sebastien	18	2578
-89	Martic	Zlatko	12	2261
-90	Aleksandrov	Aleksej	11	2574
-91	Gueci	Tea	19	2252
-92	Djukic	Nikola	12	2572
-93	Doncevic	Dario	13	2249
-94	Meshkovs	Nikita	14	2568
-95	Jarvenpaa	Jari	3	2243
-96	Petrosyan	Manuel	10	2564
-97	Ingebretsen	Jens	10	2243
-98	Alonso	Rosell-Alvar	14	2559
-99	Heinemann	Josefine	8	2238
-100	Martinovic	Sasa	13	2558
-101	Sukovic	Andrej	17	2235
-102	Halkias	Stelios	15	2552
-103	Milikow	Elie	4	2226
-104	Kadric	Denis	2	2547
-105	Tadic	Stefan	15	2223
-106	Kulaots	Kaido	6	2544
-107	Polatel	Ali	12	2220
-108	Zhigalko	Andrey	2	2541
-109	Stoinev	Metodi	5	2215
-110	Stupak	Kirill	15	2537
-111	Van-Dael	Siem	2	2207
-112	Gazik	Viktor	14	2535
-113	Gunduz	Umut-Erdem	10	2205
-114	Kelires	Andreas	7	2529
-115	Milikow	Yoav	12	2200
-116	Lobanov	Sergei	13	2526
-117	Karaoglan	Doruk	5	2197
-118	Basso	Pier-Luigi	3	2521
-119	Martinkus	Rolandas	6	2185
-120	Demidov	Mikhail	14	2520
-121	Isik	Alparslan	14	2180
-122	Potapov	Pavel	7	2517
-123	Veleski	Robert	10	2177
-124	Valsecchi	Alessio	7	2515
-125	Chigaeva	Anastasia	4	2167
-126	Zanan	Evgeny	17	2514
-127	De-Seroux	Camille	3	2160
-128	Dragnev	Valentin	11	2511
-129	Marinskii	Yurii	16	2156
-130	Mirzoev	Emil	7	2511
-131	Uruci	Besim	12	2137
-132	Keymer	Vincent	5	2509
-133	Sekelja	Marko	6	2120
-134	Baron	Tal	4	2506
-135	Aydincelebi	Kagan	15	2115
-136	Quparadze	Giga	17	2501
-137	Ivanova	Karina	18	2114
-138	Neverov	Valeriy	6	2496
-139	Tomashevskaya	Lidia	17	2112
-140	Matviishen	Viktor	18	2490
-141	Asllani	Muhamet	18	2105
-142	Sargsyan	Shant	5	2488
-143	Caglar	Sila	4	2094
-144	Plenca	Jadranko	12	2487
-145	Konstantinov	Aleksandar	14	2079
-146	Fakhrutdinov	Timur	5	2485
-147	Angun	Batu	1	2076
-148	Studer	Noel	6	2479
-149	Pantovic	Dragan-M	13	2063
-150	Livaic	Leon	19	2477
+COPY PTDB4.players (first_name, last_name, group_id, max_elo) FROM stdin;
+Haldorsen	Benjamin	15	2448
+Tomashevsky	Evgeny	6	2705
+Kozak	Adam	3	2445
+Kovalev	Vladislav	4	2703
+Mazur	Stefan	16	2441
+Mamedov	Rauf	16	2701
+Filip	Lucian-Ioan	20	2438
+Ragger	Markus	14	2696
+Kourkoulos-Arditis	Stamatis	2	2435
+Korobov	Anton	13	2686
+Tomazini	Zan	16	2431
+Eljanov	Pavel	14	2682
+Banzea	Alexandru-Bogdan	15	2427
+Nisipeanu	Liviu-Dieter	17	2670
+Radovanovic	Nikola	15	2426
+Berkes	Ferenc	15	2666
+Arsovic	Zoran	7	2422
+Safarli	Eltaj	8	2662
+Hnydiuk	Aleksander	18	2417
+Edouard	Romain	11	2658
+Tica	Sven	18	2416
+Parligras	Mircea-Emilian	11	2657
+Erdogdu	Mert	2	2413
+Fressinet	Laurent	3	2652
+Nikitenko	Mihail	18	2408
+Alekseenko	Kirill	6	2644
+Duzhakov	Ilya	14	2405
+Anton	Guijarro-David	17	2643
+Gadimbayli	Abdulla	13	2404
+Alekseev	Evgeny	2	2640
+Zarubitski	Viachaslau	7	2404
+Lysyj	Igor	1	2635
+Drnovsek	Gal	1	2402
+Hovhannisyan	Robert	12	2634
+Osmak	Iulija	14	2399
+Lagarde	Maxime	10	2631
+Kamer	Kayra	11	2397
+Gledura	Benjamin	8	2630
+Di-Benedetto	Edoardo	19	2394
+Kobalia	Mikhail	4	2627
+Saraci	Nderim	4	2391
+Paravyan	David	6	2627
+Kaasen	Tor-Fredrik	6	2383
+Jobava	Baadur	18	2622
+Arsovic	Goran	17	2380
+Van-Foreest	Jorden	2	2621
+Ayats	Llobera-Gerard	18	2377
+Kozul	Zdenko	12	2619
+Zlatanovic	Boroljub	17	2376
+Smirin	Ilia	17	2618
+Drazic	Sinisa	4	2370
+Martirosyan	Haik-M.	6	2616
+Stoyanov	Tsvetan	18	2370
+Vocaturo	Daniele	1	2616
+Kalogeris	Ioannis	18	2368
+Chigaev	Maksim	16	2613
+Serarols	Mabras-Bernat	6	2363
+Erdos	Viktor	9	2612
+Mihajlov	Sebastian	8	2356
+Lupulescu	Constantin	7	2611
+Dimic	Pavle	19	2351
+Predke	Alexandr	8	2611
+Pogosyan	Stefan	19	2347
+Goganov	Aleksey	9	2610
+Oboladze	Luka	19	2340
+Deac	Bogdan-Daniel	11	2609
+Mitsis	Georgios	12	2338
+Esipenko	Andrey	17	2603
+Klabis	Rokas	16	2333
+Moussard	Jules	12	2601
+Radovanovic	Dusan	11	2331
+Bartel	Mateusz	4	2600
+Osmanodja	Filiz	11	2326
+Antipov	Mikhail-Al.	14	2594
+Tsvetkov	Andrey	3	2322
+Donchenko	Alexander	4	2593
+Rabatin	Jakub	6	2313
+Petrov	Nikita	5	2591
+Tate	Alan	6	2306
+Can	Emre	14	2586
+Petkov	Momchil	16	2296
+Nikolov	Momchil	6	2584
+Antova	Gabriela	2	2286
+Santos	Latasa-Jaime	5	2582
+Sokolovsky	Yahli	17	2278
+Wagner	Dennis	10	2580
+Ozenir	Ekin-Baris	6	2265
+Maze	Sebastien	18	2578
+Martic	Zlatko	12	2261
+Aleksandrov	Aleksej	11	2574
+Gueci	Tea	19	2252
+Djukic	Nikola	12	2572
+Doncevic	Dario	13	2249
+Meshkovs	Nikita	14	2568
+Jarvenpaa	Jari	3	2243
+Petrosyan	Manuel	10	2564
+Ingebretsen	Jens	10	2243
+Alonso	Rosell-Alvar	14	2559
+Heinemann	Josefine	8	2238
+Martinovic	Sasa	13	2558
+Sukovic	Andrej	17	2235
+Halkias	Stelios	15	2552
+Milikow	Elie	4	2226
+Kadric	Denis	2	2547
+Tadic	Stefan	15	2223
+Kulaots	Kaido	6	2544
+Polatel	Ali	12	2220
+Zhigalko	Andrey	2	2541
+Stoinev	Metodi	5	2215
+Stupak	Kirill	15	2537
+Van-Dael	Siem	2	2207
+Gazik	Viktor	14	2535
+Gunduz	Umut-Erdem	10	2205
+Kelires	Andreas	7	2529
+Milikow	Yoav	12	2200
+Lobanov	Sergei	13	2526
+Karaoglan	Doruk	5	2197
+Basso	Pier-Luigi	3	2521
+Martinkus	Rolandas	6	2185
+Demidov	Mikhail	14	2520
+Isik	Alparslan	14	2180
+Potapov	Pavel	7	2517
+Veleski	Robert	10	2177
+Valsecchi	Alessio	7	2515
+Chigaeva	Anastasia	4	2167
+Zanan	Evgeny	17	2514
+De-Seroux	Camille	3	2160
+Dragnev	Valentin	11	2511
+Marinskii	Yurii	16	2156
+Mirzoev	Emil	7	2511
+Uruci	Besim	12	2137
+Keymer	Vincent	5	2509
+Sekelja	Marko	6	2120
+Baron	Tal	4	2506
+Aydincelebi	Kagan	15	2115
+Quparadze	Giga	17	2501
+Ivanova	Karina	18	2114
+Neverov	Valeriy	6	2496
+Tomashevskaya	Lidia	17	2112
+Matviishen	Viktor	18	2490
+Asllani	Muhamet	18	2105
+Sargsyan	Shant	5	2488
+Caglar	Sila	4	2094
+Plenca	Jadranko	12	2487
+Konstantinov	Aleksandar	14	2079
+Fakhrutdinov	Timur	5	2485
+Angun	Batu	1	2076
+Studer	Noel	6	2479
+Pantovic	Dragan-M	13	2063
+Livaic	Leon	19	2477
 \.
 
 COPY PTDB4.pairings (id, white, black, result, match_date) from stdin;
