@@ -254,6 +254,36 @@ CREATE TABLE PTDB4.pairings
     id_record     integer REFERENCES ptdb4.game_record
 );
 
+CREATE VIEW PTDB4.match_insert_view AS
+SELECT w.first_name as "w_first", w.last_name as "w_last",
+b.first_name as "b_first", b.last_name as "b_last",
+p.result, p.match_date, p.tournament_id 
+FROM PTDB4.players w 
+NATURAL JOIN PTDB4.players b 
+NATURAL JOIN PTDB4.pairings p
+WHERE 0 = 1;
+
+CREATE OR REPLACE FUNCTION in_pairing()
+    RETURNS TRIGGER AS
+$$
+DECLARE 
+   white_id integer;
+   black_id integer;
+BEGIN
+   SELECT id INTO white_id FROM PTDB4.players WHERE first_name = NEW.w_first and last_name = NEW.w_last;
+   SELECT id INTO black_id FROM PTDB4.players WHERE first_name = NEW.b_first and last_name = NEW.b_last;
+
+   INSERT INTO PTDB4.pairings (white, black, tournament_id, result, match_date)
+   VALUES (white_id, black_id, NEW.tournament_id, NEW.result, NEW.match_date);
+   RETURN NEW;
+END;
+$$
+language plpgsql;
+
+CREATE TRIGGER new_pairing_view
+INSTEAD OF INSERT ON PTDB4.match_insert_view
+FOR EACH ROW EXECUTE FUNCTION in_pairing();
+
 CREATE TRIGGER insert_tournament
     BEFORE INSERT OR UPDATE ON PTDB4.pairings
     FOR EACH ROW EXECUTE PROCEDURE insert_tournament();
