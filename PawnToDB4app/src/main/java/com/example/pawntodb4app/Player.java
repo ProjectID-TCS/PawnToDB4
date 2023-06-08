@@ -1,5 +1,7 @@
 package com.example.pawntodb4app;
 
+import org.controlsfx.control.RangeSlider;
+
 public class Player {
     private final int id;
     private final String firstName;
