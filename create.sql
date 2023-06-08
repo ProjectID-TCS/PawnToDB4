@@ -379,8 +379,22 @@ language plpgsql;
 CREATE TRIGGER elo_update
     AFTER INSERT OR UPDATE ON PTDB4.pairings
     FOR EACH ROW EXECUTE PROCEDURE elo_update();
+    
+    
+CREATE OR REPLACE FUNCTION current_elo(id_elo INTEGER)
+    RETURNS INT AS
+$$
+DECLARE
+   result INTEGER;
+BEGIN
+   SELECT INTO result elo FROM PTDB4.elo WHERE player_id = id_elo ORDER BY acquired_on DESC FETCH FIRST 1 ROWS ONLY;
+   RETURN result;
+END;
+$$
+LANGUAGE plpgsql;
 
 CREATE INDEX each_tournament ON PTDB4.pairings (tournament_id);
+
 
 CREATE TABLE PTDB4.pairing_tournament
 (
