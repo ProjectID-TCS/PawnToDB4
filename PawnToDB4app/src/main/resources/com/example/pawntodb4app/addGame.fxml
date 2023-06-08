@@ -54,22 +54,33 @@
                 </Label>
                 <Label text="Data" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="TOP">
                     <GridPane.margin>
-                        <Insets top="10.0" />
+                        <Insets top="10.0"/>
                     </GridPane.margin>
                 </Label>
-                <Label text="Turniej" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="TOP">
+                <VBox spacing="10.0" GridPane.halignment="CENTER" GridPane.rowIndex="2">
                     <GridPane.margin>
-                        <Insets top="10.0" />
+                        <Insets left="10.0"/>
                     </GridPane.margin>
-                </Label>
-            <ChoiceBox fx:id="tournamentChoice" prefWidth="150.0" GridPane.halignment="CENTER" GridPane.rowIndex="2" GridPane.valignment="CENTER" />
-                <Button fx:id="gameRecordButton" mnemonicParsing="false" onAction="#handleGameRecordButton" text="Szczegóły gry" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="1" />
-                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBackButton" prefHeight="26.0" prefWidth="183.0" text="Wróć do Menu Głównego" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-            <Button fx:id="gameAddButton" mnemonicParsing="false" onAction="#handleAddButton" text="Dodaj" textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
+                    <Label text="Opening " alignment="CENTER"/>
+                    <Label fx:id="openingLabel" prefWidth="150.0"/>
+                    <Label text="Ending "/>
+                    <Label fx:id="endingLabel" prefWidth="150.0"/>
+                    <Label text="Record "/>
+                    <Label fx:id="recordLabel" prefWidth="150.0"/>
+                </VBox>
+
+                <Button fx:id="gameRecordButton" mnemonicParsing="false" onAction="#handleGameRecordButton"
+                        text="Szczegóły gry" GridPane.columnIndex="2" GridPane.halignment="CENTER"
+                        GridPane.rowIndex="1"/>
+                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBackButton" prefHeight="26.0"
+                        prefWidth="183.0" text="Wróć do Menu Głównego" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                <Button fx:id="gameAddButton" mnemonicParsing="false" onAction="#handleAddButton" text="Dodaj"
+                        textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER"
+                        GridPane.rowIndex="1" GridPane.valignment="CENTER">
+                    <font>
+                        <Font size="16.0"/>
+                    </font>
+                </Button>
             </children>
         </GridPane>
     </center>

@@ -31,7 +31,7 @@ public class MainMenuController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("addGame.fxml"));
         Parent root = loader.load();
         Stage stage = (Stage) addGameButton.getScene().getWindow();
-        stage.setScene(new Scene(root, 600, 350));
+        stage.setScene(new Scene(root, 600, 500));
     }
     @FXML
     void handleAddTournamentButton(ActionEvent event) throws IOException{
@@ -57,14 +57,6 @@ public class MainMenuController {
 
         Stage stage = (Stage) searchPlayerButton.getScene().getWindow();
         stage.setScene(new Scene(root, 300, 300));
-    }
-
-    @FXML
-    public void handleAddExtraToGame(ActionEvent event) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("addExtraToGame.fxml"));
-        Parent root = loader.load();
-        Stage stage = (Stage) addExtraToGameButton.getScene().getWindow();
-        stage.setScene(new Scene(root, 350, 350));
     }
 
     public void handleSearchGameButton(ActionEvent event) throws IOException {

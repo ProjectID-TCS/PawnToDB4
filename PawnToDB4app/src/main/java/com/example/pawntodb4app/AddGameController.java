@@ -17,8 +17,22 @@ import java.time.format.DateTimeFormatter;
 
 public class AddGameController {
 
+    String opening;
+    String record;
+    String ending;
+
     ObservableList<String> result;
     ObservableList<String> tournaments;
+
+    @FXML
+    private Label openingLabel;
+
+    @FXML
+    private Label endingLabel;
+
+    @FXML
+    private Label recordLabel;
+
     @FXML
     private Button backButton;
 
@@ -36,8 +50,7 @@ public class AddGameController {
 
     @FXML
     private ChoiceBox<String> resultChoiceBox;
-    @FXML
-    private ChoiceBox<String> tournamentChoice;
+
     @FXML
     private Button gameAddButton;
 
@@ -85,9 +98,7 @@ public class AddGameController {
         }
         String formatted = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         System.out.println(formatted);
-        String tournament = tournamentChoice.getValue();
-        if (tournament == null || tournament.isEmpty())
-            tournament = "null";
+        String tournament = "null";
 
         try (Connection con = DataBaseConfig.connect();
              PreparedStatement pst = con.prepareStatement(query)) {
@@ -103,12 +114,16 @@ public class AddGameController {
                 pst.setNull(7, Types.INTEGER);
 
             pst.executeUpdate();
-
+            //addExtraInformation();
         } catch (SQLException ex) {
             showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
             ex.printStackTrace();
-            //return false;
         }
+        showSuccessAlert("Pomyslnie dodano", "Pomyślnie dodano partie do bazy danych");
+    }
+
+    void addExtraInformation(int id) throws SQLException {
+
     }
 
     @FXML
@@ -123,6 +138,10 @@ public class AddGameController {
     void handleGameRecordButton(ActionEvent event) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("addExtraToGame.fxml"));
         Parent root = loader.load();
+
+        AddExtraToGameController controller = loader.getController();
+        controller.setRootController(this);
+
         Stage stage = new Stage();
         stage.setTitle("Szczegóły gry");
         stage.setScene(new Scene(root, 400, 300));
@@ -146,23 +165,7 @@ public class AddGameController {
             showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
             ex.printStackTrace();
         }
-
-        try (Connection con = DataBaseConfig.connect()) {
-            String query = "SELECT name from PTDB4.tournaments";
-            try (Statement statement = con.createStatement();
-                 ResultSet resultSet = statement.executeQuery(query)) {
-                while (resultSet.next()) {
-                    String item = resultSet.getString("name");
-                    tournaments.add(item);
-                }
-            }
-
-        } catch (SQLException ex) {
-            showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
-            ex.printStackTrace();
-        }
         resultChoiceBox.setItems(result);
-        tournamentChoice.setItems(tournaments);
     }
 
     private void showErrorAlert(String title, String message) {
@@ -179,5 +182,23 @@ public class AddGameController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public void setRecord(String record) {
+        this.record = record;
+        if (record.length() < 32)
+            recordLabel.setText(record);
+        else
+            recordLabel.setText(record.substring(0, 30));
+    }
+
+    public void setEnding(String ending) {
+        this.ending = ending;
+        endingLabel.setText(ending);
+    }
+
+    public void setOpeningName(String opening) {
+        this.opening = opening;
+        openingLabel.setText(opening);
     }
 }
