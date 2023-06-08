@@ -916,14 +916,14 @@ COPY PTDB4.game_record (id, game_result,ending) from stdin;
 \.
 
 COPY PTDB4.pairings (id, white, black, result, match_date, id_record) from stdin;
-350	89	130	W	2022-08-15	1
-351	149	61	W	2022-08-15	2
-352	21	39	D	2022-08-16	3
-353	60	1	W	2022-08-16	4
+350	89	130	W	2022-08-17	1
+351	149	61	W	2022-08-17	2
+352	21	39	D	2022-08-17	3
+353	60	1	W	2022-08-17	4
 354	66	91	D	2022-08-17	5
 355	105	116	B	2022-08-17	6
-356	63	132	D	2022-08-18	7
-357	105	70	B	2022-08-18	8
+356	63	132	D	2022-08-17	7
+357	105	70	B	2022-08-17	8
 \.
 
 COPY PTDB4.formats (id, name) FROM stdin;
