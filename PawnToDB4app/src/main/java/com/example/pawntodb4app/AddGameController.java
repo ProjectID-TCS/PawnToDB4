@@ -49,8 +49,8 @@ public class AddGameController {
 
     @FXML
     void handleAddButton(ActionEvent event) {
-        String query = "INSERT INTO PTDB4.match_insert_view (w_first,w_last,b_first,b_last,result,match_date,tournament_id) " +
-                "VALUES (?, ?, ?, ?, CAST(? AS ptdb4.match_result), ?::date, ?::int)";
+        String query = "INSERT INTO PTDB4.match_insert_view (w_first,w_last,b_first,b_last,result,match_date) " +
+                "VALUES (?, ?, ?, ?, CAST(? AS ptdb4.match_result), ?::date)";
         String firstNameW = whitePlayerImie.getText();
         String lastNameW = whitePlayerNazwisko.getText();
         String firstNameB = blackPlayerImie.getText();
@@ -97,17 +97,16 @@ public class AddGameController {
             pst.setString(4, lastNameB);
             pst.setObject(5, res);
             pst.setString(6, formatted);
-            if (tournament != "null")
-                pst.setString(7, tournament);
-            else
-                pst.setNull(7, Types.INTEGER);
+            //if (tournament != "null")
+            //    pst.setString(7, tournament);
+            //else
+            //    pst.setNull(7, Types.INTEGER);
 
             pst.executeUpdate();
 
         } catch (SQLException ex) {
-            showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
+            showErrorAlert("Błąd", "Data partii jest niechronologiczna");
             ex.printStackTrace();
-            //return false;
         }
     }
 
