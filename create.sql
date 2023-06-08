@@ -282,6 +282,30 @@ CREATE TRIGGER new_pairing_view
 INSTEAD OF INSERT ON PTDB4.match_insert_view
 FOR EACH ROW EXECUTE FUNCTION in_pairing();
 
+
+CREATE OR REPLACE FUNCTION pairing_chronology()
+    RETURNS TRIGGER AS
+$$
+DECLARE 
+   white_max_date DATE;
+   black_max_date DATE;
+BEGIN
+   SELECT max(match_date) INTO white_max_date FROM PTDB4.pairings WHERE white = NEW.white or black = NEW.white;
+   SELECT max(match_date) INTO black_max_date FROM PTDB4.pairings WHERE white = NEW.black or black = NEW.black;
+
+   IF NEW.match_date <= white_max_date OR NEW.match_date <= black_max_date THEN
+        RAISE EXCEPTION 'Error while inserting pairing. Match date is not chronological';
+   END IF;
+   
+   RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER pairing_date
+BEFORE INSERT ON PTDB4.pairings
+FOR EACH ROW EXECUTE FUNCTION pairing_chronology();
+
 CREATE TRIGGER insert_tournament
     BEFORE INSERT OR UPDATE ON PTDB4.pairings
     FOR EACH ROW EXECUTE PROCEDURE insert_tournament();
@@ -547,9 +571,9 @@ Angun	Batu	1	2076
 Studer	Noel	6	2479
 Pantovic	Dragan-M	13	2063
 Livaic	Leon	19	2477
-Piotr	Kubicki	3	2500
-Adam	Szwaja	4	2700
-Michal	Hoffmann	5	2600
+Kubicki Piotr	3	2500
+Szwaja  Adam	4	2700
+Hoffmann Michal	5	2600
 \.
 
 COPY PTDB4.pairings (white, black, result, match_date) from stdin;
