@@ -293,7 +293,7 @@ BEGIN
    SELECT max(match_date) INTO white_max_date FROM PTDB4.pairings WHERE white = NEW.white or black = NEW.white;
    SELECT max(match_date) INTO black_max_date FROM PTDB4.pairings WHERE white = NEW.black or black = NEW.black;
 
-   IF NEW.match_date <= white_max_date OR NEW.match_date <= black_max_date THEN
+   IF NEW.match_date < white_max_date OR NEW.match_date < black_max_date THEN
         RAISE EXCEPTION 'Error while inserting pairing. Match date is not chronological';
    END IF;
    
