@@ -282,6 +282,30 @@ CREATE TRIGGER new_pairing_view
 INSTEAD OF INSERT ON PTDB4.match_insert_view
 FOR EACH ROW EXECUTE FUNCTION in_pairing();
 
+
+CREATE OR REPLACE FUNCTION pairing_chronology()
+    RETURNS TRIGGER AS
+$$
+DECLARE 
+   white_max_date DATE;
+   black_max_date DATE;
+BEGIN
+   SELECT max(match_date) INTO white_max_date FROM PTDB4.pairings WHERE white = NEW.white or black = NEW.white;
+   SELECT max(match_date) INTO black_max_date FROM PTDB4.pairings WHERE white = NEW.black or black = NEW.black;
+
+   IF NEW.match_date < white_max_date OR NEW.match_date < black_max_date THEN
+        RAISE EXCEPTION 'Error while inserting pairing. Match date is not chronological';
+   END IF;
+   
+   RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER pairing_date
+BEFORE INSERT ON PTDB4.pairings
+FOR EACH ROW EXECUTE FUNCTION pairing_chronology();
+
 CREATE TRIGGER insert_tournament
     BEFORE INSERT OR UPDATE ON PTDB4.pairings
     FOR EACH ROW EXECUTE PROCEDURE insert_tournament();
@@ -355,8 +379,22 @@ language plpgsql;
 CREATE TRIGGER elo_update
     AFTER INSERT OR UPDATE ON PTDB4.pairings
     FOR EACH ROW EXECUTE PROCEDURE elo_update();
+    
+    
+CREATE OR REPLACE FUNCTION current_elo(id_elo INTEGER)
+    RETURNS INT AS
+$$
+DECLARE
+   result INTEGER;
+BEGIN
+   SELECT INTO result elo FROM PTDB4.elo WHERE player_id = id_elo ORDER BY acquired_on DESC FETCH FIRST 1 ROWS ONLY;
+   RETURN result;
+END;
+$$
+LANGUAGE plpgsql;
 
 CREATE INDEX each_tournament ON PTDB4.pairings (tournament_id);
+
 
 CREATE TABLE PTDB4.pairing_tournament
 (
@@ -547,26 +585,26 @@ Angun	Batu	1	2076
 Studer	Noel	6	2479
 Pantovic	Dragan-M	13	2063
 Livaic	Leon	19	2477
-Piotr	Kubicki	3	2500
-Adam	Szwaja	4	2700
-Michal	Hoffmann	5	2600
+Kubicki Piotr	3	2500
+Szwaja  Adam	4	2700
+Hoffmann Michal	5	2600
 \.
 
 COPY PTDB4.pairings (white, black, result, match_date) from stdin;
-24	29	W	2021-09-27
-93	116	D	2021-09-27
-89	36	W	2021-09-27
-124	42	B	2021-09-27
-26	113	W	2021-09-27
-4	104	D	2021-09-27
-57	24	D	2021-09-27
-108	100	B	2021-09-27
-1	12	D	2021-09-27
-82	27	B	2021-09-27
-81	5	W	2021-09-27
-83	96	W	2021-09-27
-39	134	D	2021-09-27
-61	147	W	2021-09-27
+24	29	W	2021-09-25
+93	116	D	2021-09-25
+89	36	W	2021-09-25
+124	42	B	2021-09-25
+26	113	W	2021-09-25
+4	104	D	2021-09-25
+57	24	D	2021-09-26
+108	100	B	2021-09-26
+1	12	D	2021-09-26
+82	27	B	2021-09-26
+81	5	W	2021-09-26
+83	96	W	2021-09-26
+39	134	D	2021-09-26
+61	147	W	2021-09-26
 83	89	W	2021-09-27
 121	24	B	2021-09-27
 103	44	B	2021-09-27
