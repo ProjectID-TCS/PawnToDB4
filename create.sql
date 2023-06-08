@@ -46,8 +46,6 @@ CREATE OR REPLACE FUNCTION player_up()
     RETURNS TRIGGER AS
 $$BEGIN
     new.id = old.id;
-    new.first_name = old.first_name;
-    new.last_name = old.last_name;
     new.max_elo = old.max_elo;
     return new;
 end;
@@ -398,7 +396,7 @@ COPY PTDB4.groups (id, group_name) FROM stdin;
 20	Sky   
 \.
 
-COPY PTDB4.players (first_name, last_name, group_id, max_elo) FROM stdin;
+COPY PTDB4.players (last_name, first_name, group_id, max_elo) FROM stdin;
 Haldorsen	Benjamin	15	2448
 Tomashevsky	Evgeny	6	2705
 Kozak	Adam	3	2445
@@ -456,7 +454,7 @@ Vocaturo	Daniele	1	2616
 Kalogeris	Ioannis	18	2368
 Chigaev	Maksim	16	2613
 Serarols	Mabras-Bernat	6	2363
-Erdos	Viktor	9	2612
+EErdos	Viktor	9	2612
 Mihajlov	Sebastian	8	2356
 Lupulescu	Constantin	7	2611
 Dimic	Pavle	19	2351
