@@ -33,6 +33,14 @@ public class MainMenuController {
         Stage stage = (Stage) addGameButton.getScene().getWindow();
         stage.setScene(new Scene(root, 600, 350));
     }
+    @FXML
+    void handleAddTournamentButton(ActionEvent event) throws IOException{
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("addTournament.fxml"));
+        System.out.println("there");
+        Parent root = loader.load();
+        Stage stage = (Stage) addGameButton.getScene().getWindow();
+        stage.setScene(new Scene(root, 600, 600));
+    }
 
     @FXML
     public void handleAddPlayerButton(ActionEvent event) throws IOException {
