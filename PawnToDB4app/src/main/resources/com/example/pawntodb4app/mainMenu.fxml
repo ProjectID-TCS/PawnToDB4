@@ -7,4 +7,5 @@
     <Button fx:id="addPlayerButton" onAction="#handleAddPlayerButton" text="Dodaj Gracza"/>
     <Button fx:id="searchPlayerButton" onAction="#handleSearchPlayerButton" text="Szukaj Gracza"/>
     <Button fx:id="addGameButton" onAction="#handleAddGameButton" text="Dodaj Partię"/>
+    <Button fx:id="searchGameButton" onAction="#handleSearchGameButton" text="Szukaj Partii"/>
 </VBox>

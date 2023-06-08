@@ -23,7 +23,11 @@
         <Label text="Grupa: "/>
         <Label fx:id="groupField"/>
     </HBox>
-    <VBox alignment="CENTER" GridPane.rowIndex="4">
+    <HBox alignment="CENTER" GridPane.rowIndex="4">
+        <Label text="Max elo: "/>
+        <Label fx:id="maxElo"/>
+    </HBox>
+    <VBox alignment="CENTER" GridPane.rowIndex="5">
         <LineChart fx:id="eloChart" title="Historia elo">
             <xAxis>
                 <CategoryAxis side="BOTTOM" label="data"/>
@@ -34,7 +38,7 @@
         </LineChart>
     </VBox>
 
-    <HBox alignment="CENTER" GridPane.rowIndex="5">
+    <HBox alignment="CENTER" GridPane.rowIndex="6">
         <Button text="Zamknij" onAction="#handleCloseButton"/>
         <GridPane.margin>
             <Insets bottom="10"/>

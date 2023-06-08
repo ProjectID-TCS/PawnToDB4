@@ -32,10 +32,14 @@ public class PlayerDetailsController {
     @FXML
     private Label groupField;
 
+    @FXML
+    private Label maxElo;
+
     public void setPlayer(Player player) {
         firstNameField.setText(player.getFirstName());
         lastNameField.setText(player.getLastName());
         groupField.setText(String.valueOf(player.getGroupId()));
+        maxElo.setText(player.getMaxElo());
     }
 
     public void loadChartData(int playerId) {

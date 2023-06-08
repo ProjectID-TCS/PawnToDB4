@@ -9,5 +9,4 @@
     <TextField fx:id="lastNameField" promptText="Nazwisko"/>
     <Button text="Szukaj" onAction="#handleSearchButton"/>
     <Button fx:id="backButton" text="Wróć do Menu Głównego" onAction="#handleBackButton"/>
-
 </VBox>

@@ -21,6 +21,12 @@ public class MainMenuController {
     private Button searchPlayerButton;
 
     @FXML
+    private Button addExtraToGameButton;
+
+    @FXML
+    private Button searchGameButton;
+
+    @FXML
     void handleAddGameButton(ActionEvent event) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("addGame.fxml"));
         Parent root = loader.load();
@@ -43,5 +49,20 @@ public class MainMenuController {
 
         Stage stage = (Stage) searchPlayerButton.getScene().getWindow();
         stage.setScene(new Scene(root, 300, 300));
+    }
+
+    @FXML
+    public void handleAddExtraToGame(ActionEvent event) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("addExtraToGame.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) addExtraToGameButton.getScene().getWindow();
+        stage.setScene(new Scene(root, 350, 350));
+    }
+
+    public void handleSearchGameButton(ActionEvent event) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("searchGame.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) searchGameButton.getScene().getWindow();
+        stage.setScene(new Scene(root, 350, 350));
     }
 }

@@ -9,8 +9,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
-import javafx.util.StringConverter;
-import javafx.util.converter.FormatStringConverter;
 
 import java.io.IOException;
 import java.sql.*;
@@ -122,8 +120,13 @@ public class AddGameController {
     }
 
     @FXML
-    void handleGameRecordButton(ActionEvent event) {
-
+    void handleGameRecordButton(ActionEvent event) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("addExtraToGame.fxml"));
+        Parent root = loader.load();
+        Stage stage = new Stage();
+        stage.setTitle("Szczegóły gry");
+        stage.setScene(new Scene(root, 400, 300));
+        stage.show();
     }
 
     public void initialize() {

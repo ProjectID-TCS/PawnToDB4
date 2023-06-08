@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" maxHeight="305.0" maxWidth="306.0" prefHeight="305.0"
-            prefWidth="306.0" xmlns="http://javafx.com/javafx/20.0.1"
+            prefWidth="306.0" xmlns="http://javafx.com/javafx/19"
             fx:controller="com.example.pawntodb4app.AddPlayerController">
     <top>
         <VBox alignment="CENTER" prefHeight="55.0" prefWidth="276.0" spacing="10" BorderPane.alignment="CENTER">

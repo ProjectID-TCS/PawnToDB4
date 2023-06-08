@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns:fx="http://javafx.com/fxml" alignment="CENTER" spacing="10"
+      fx:controller="com.example.pawntodb4app.SearchGameController">
+
+    <Button fx:id="backButton" text="Wróć do Menu Głównego" onAction="#handleBackButton"/>
+</VBox>

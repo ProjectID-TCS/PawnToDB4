@@ -62,7 +62,7 @@ public class SearchPlayerController {
     }
 
     private Player searchPlayer(String firstName, String lastName) {
-        String query = "SELECT p.id, p.first_name, p.last_name, g.group_name " +
+        String query = "SELECT p.id, p.first_name, p.last_name, g.group_name, p.max_elo " +
                 "FROM PTDB4.players p " +
                 "LEFT OUTER JOIN PTDB4.groups g ON p.group_id = g.id " +
                 "WHERE p.first_name = ? AND p.last_name = ?";
@@ -76,7 +76,9 @@ public class SearchPlayerController {
                 if (rs.next()) {
                     return new Player(rs.getInt("id"),
                             rs.getString("first_name"),
-                            rs.getString("last_name"), rs.getString("group_name"));
+                            rs.getString("last_name"),
+                            rs.getString("group_name"),
+                            rs.getString("max_elo"));
                 }
             }
 

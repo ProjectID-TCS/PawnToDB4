@@ -5,12 +5,14 @@ public class Player {
     private final String firstName;
     private final String lastName;
     private final String groupId;
+    private final String maxElo;
 
-    public Player(int id, String firstName, String lastName, String groupId) {
+    public Player(int id, String firstName, String lastName, String groupId, String maxElo) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.groupId = groupId;
+        this.maxElo = maxElo;
     }
 
     public int getId() {
@@ -27,6 +29,10 @@ public class Player {
 
     public String getGroupId() {
         return groupId;
+    }
+
+    public String getMaxElo() {
+        return maxElo;
     }
 
     @Override
