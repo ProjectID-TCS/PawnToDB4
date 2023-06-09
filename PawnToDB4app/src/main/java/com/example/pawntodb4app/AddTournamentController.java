@@ -21,7 +21,6 @@ import javafx.stage.Stage;
 import javafx.util.Pair;
 import org.controlsfx.control.RangeSlider;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
@@ -110,7 +109,7 @@ public class AddTournamentController {
                 "insert into tournaments (name, format, place, start_date, end_date)" +
                 "values (?,?,?,?)";
         String tournamentGetter = "select id from tournaments where name = ? and format = ? and place = ?  and start_ date = ? and end_date = ?";
-        List<String> games = addGames(id); //<- result;
+//        List<String> games = addGames(id); //<- result;
     }
     List<String> addGames(int id){
         List<String> games = new ArrayList<>();
@@ -122,7 +121,7 @@ public class AddTournamentController {
             String res;
             if((wyniki.get(i).getValue()).equals("White")){
                 res = "insert into ptdb4.pairings (white, black,tournament_id,result) values" +
-                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",W)";_
+                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",W)";
             }
             else if((wyniki.get(i).getValue()).equals("Draw")){
                 res = "insert into ptdb4.pairings (white, black,tournament_id,result) values" +
