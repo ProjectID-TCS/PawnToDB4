@@ -3,7 +3,6 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
@@ -11,7 +10,7 @@
 
     <ComboBox fx:id="openingBox" promptText="Wybierz opening"/>
 
-    <TextField fx:id="endingField" promptText="Podaj ending"/>
+    <ComboBox fx:id="endingBox" promptText="Wybierz ending"/>
 
     <TextArea fx:id="movesRecordArea" promptText="Wpisz zapis partii" prefHeight="200"/>
 

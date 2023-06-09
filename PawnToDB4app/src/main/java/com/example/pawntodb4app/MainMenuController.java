@@ -63,6 +63,6 @@ public class MainMenuController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("searchGame.fxml"));
         Parent root = loader.load();
         Stage stage = (Stage) searchGameButton.getScene().getWindow();
-        stage.setScene(new Scene(root, 350, 350));
+        stage.setScene(new Scene(root, 600, 350));
     }
 }
