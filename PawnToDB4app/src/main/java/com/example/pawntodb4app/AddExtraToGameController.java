@@ -6,13 +6,16 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AddExtraToGameController {
 
@@ -22,7 +25,7 @@ public class AddExtraToGameController {
     private ComboBox<String> openingBox;
 
     @FXML
-    private TextField endingField;
+    private ComboBox<String> endingBox;
 
     @FXML
     private TextArea movesRecordArea;
@@ -34,7 +37,7 @@ public class AddExtraToGameController {
 
     private void loadOpenings() {
         ObservableList<String> options = FXCollections.observableArrayList();
-
+        ObservableList<String> optionsEnd = FXCollections.observableArrayList();
         try {
             Connection connection = DataBaseConfig.connect();
             Statement statement = connection.createStatement();
@@ -49,12 +52,40 @@ public class AddExtraToGameController {
             showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
             ex.printStackTrace();
         }
+        optionsEnd.add("resignation");
+        optionsEnd.add("mate");
+        optionsEnd.add("time");
+        optionsEnd.add("agreement");
+        endingBox.setItems(optionsEnd);
     }
 
     @FXML
     public void handleAddButton() {
-        rootController.setEnding(endingField.getText());
-        rootController.setRecord(movesRecordArea.getText());
+        String record = movesRecordArea.getText();
+        if (!Objects.equals(record, "")) {
+            record += " ";
+            String regex = "(\\d+\\.\\s\\b\\w{1,7}\\b\\s\\b\\w{1,7}\\b\\s)*";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(record);
+            if (!matcher.matches()) {
+                showErrorAlert("Błąd", "Niepoprawny format parti");
+                return;
+            }
+
+            ArrayList<String> white = new ArrayList<>();
+            ArrayList<String> black = new ArrayList<>();
+
+            String[] splitStrings = record.split("\\d+\\.\\s");
+            for (String s : splitStrings) {
+                String[] words = s.split("\\s");
+                if (words.length >= 2) {
+                    white.add(words[0]);
+                    black.add(words[1]);
+                }
+            }
+            rootController.setMoves(white, black);
+        }
+        rootController.setEnding(endingBox.getValue());
         rootController.setOpeningName(openingBox.getValue());
         showSuccessAlert("Pomyslnie dodano", "Pomyślnie dodano dodatkowe szczegóły gry");
         Stage stage = (Stage) openingBox.getScene().getWindow();

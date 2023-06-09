@@ -14,10 +14,13 @@ import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 public class AddGameController {
 
     String opening;
+    ArrayList<String> white;
+    ArrayList<String> black;
     String record;
     String ending;
 
@@ -62,8 +65,8 @@ public class AddGameController {
 
     @FXML
     void handleAddButton(ActionEvent event) {
-        String query = "INSERT INTO PTDB4.match_insert_view (w_first,w_last,b_first,b_last,result,match_date) " +
-                "VALUES (?, ?, ?, ?, CAST(? AS ptdb4.match_result), ?::date)";
+        String query = "select insert_match(" +
+                "?, ?, ?, ?, CAST(? AS ptdb4.match_result), ?::date, ?::int)";
         String firstNameW = whitePlayerImie.getText();
         String lastNameW = whitePlayerNazwisko.getText();
         String firstNameB = blackPlayerImie.getText();
@@ -97,33 +100,44 @@ public class AddGameController {
             return;
         }
         String formatted = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        System.out.println(formatted);
+        //System.out.println(formatted);
         String tournament = "null";
+        int id = 0;
+        try {
+            Connection con = DataBaseConfig.connect();
+            if (con != null) {
+                con.setAutoCommit(false);
+            }
+            try (PreparedStatement pst = con.prepareStatement(query)) {
+                pst.setString(1, firstNameW);
+                pst.setString(2, lastNameW);
+                pst.setString(3, firstNameB);
+                pst.setString(4, lastNameB);
+                pst.setObject(5, res);
+                pst.setString(6, formatted);
+                if (tournament != "null")
+                    pst.setString(7, tournament);
+                else
+                    pst.setNull(7, Types.INTEGER);
 
-        try (Connection con = DataBaseConfig.connect();
-             PreparedStatement pst = con.prepareStatement(query)) {
-            pst.setString(1, firstNameW);
-            pst.setString(2, lastNameW);
-            pst.setString(3, firstNameB);
-            pst.setString(4, lastNameB);
-            pst.setObject(5, res);
-            pst.setString(6, formatted);
-            //if (tournament != "null")
-            //    pst.setString(7, tournament);
-            //else
-            //    pst.setNull(7, Types.INTEGER);
+                ResultSet resultSet = pst.executeQuery();
+                resultSet.next();
+                id = resultSet.getInt(1);
+            } catch (SQLException ex) {
+                showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych przy dodawaniu partii");
+                ex.printStackTrace();
+            }
+            showSuccessAlert("Pomyslnie dodano", "Pomyślnie dodano partie do bazy danych");
+            addExtraInformation(id);
+        } catch (SQLException e) {
 
-            pst.executeUpdate();
-            //addExtraInformation();
-        } catch (SQLException ex) {
-            showErrorAlert("Błąd", "Data partii jest niechronologiczna");
-            ex.printStackTrace();
         }
-        showSuccessAlert("Pomyslnie dodano", "Pomyślnie dodano partie do bazy danych");
     }
 
-    void addExtraInformation(int id) throws SQLException {
+    void addExtraInformation(int id) {
+        if (opening != null) {
 
+        }
     }
 
     @FXML
@@ -149,6 +163,8 @@ public class AddGameController {
     }
 
     public void initialize() {
+        black = new ArrayList<>();
+        white = new ArrayList<>();
         result = FXCollections.observableArrayList();
         tournaments = FXCollections.observableArrayList();
         try (Connection con = DataBaseConfig.connect()) {
@@ -184,12 +200,11 @@ public class AddGameController {
         alert.showAndWait();
     }
 
-    public void setRecord(String record) {
-        this.record = record;
-        if (record.length() < 32)
-            recordLabel.setText(record);
-        else
-            recordLabel.setText(record.substring(0, 30));
+    public void setMoves(ArrayList<String> white, ArrayList<String> black) {
+        this.white = white;
+        this.black = black;
+
+        recordLabel.setText("1. " + this.white.get(0) + " " + this.black.get(0) + "...");
     }
 
     public void setEnding(String ending) {

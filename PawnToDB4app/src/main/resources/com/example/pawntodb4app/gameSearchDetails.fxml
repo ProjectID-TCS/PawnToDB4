@@ -3,10 +3,9 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Font?>
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="373.0"
             prefWidth="527.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.example.pawntodb4app.SearchGameController">
+            fx:controller="com.example.pawntodb4app.GameSearchDetailsController">
     <center>
         <GridPane BorderPane.alignment="CENTER">
             <columnConstraints>
@@ -20,21 +19,23 @@
                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
             </rowConstraints>
             <children>
-                <TextField fx:id="whitePlayerImie" prefHeight="26.0" prefWidth="141.0" promptText="Imie"/>
-                <TextField fx:id="whitePlayerNazwisko" alignment="BOTTOM_LEFT" layoutX="362.0" layoutY="60.0"
-                           promptText="Nazwisko" GridPane.valignment="BOTTOM">
+                <Label fx:id="whitePlayerImie" prefHeight="26.0" prefWidth="141.0"/>
+                <Label fx:id="whitePlayerNazwisko" alignment="BOTTOM_LEFT" layoutX="362.0" layoutY="60.0"
+                       GridPane.valignment="BOTTOM">
                     <GridPane.margin>
                         <Insets bottom="10.0"/>
                     </GridPane.margin>
-                </TextField>
-                <TextField fx:id="blackPlayerImie" promptText="Imię" GridPane.columnIndex="2"/>
-                <TextField fx:id="blackPlayerNazwisko" layoutX="362.0" layoutY="60.0" promptText="Nazwisko"
-                           GridPane.columnIndex="2" GridPane.valignment="BOTTOM">
+                </Label>
+                <Label fx:id="gameResult" prefHeight="26.0" prefWidth="107.0" GridPane.columnIndex="1"
+                       GridPane.halignment="CENTER" GridPane.valignment="CENTER"/>
+                <Label fx:id="blackPlayerImie" GridPane.columnIndex="2"/>
+                <Label fx:id="blackPlayerNazwisko" layoutX="362.0" layoutY="60.0" GridPane.columnIndex="2"
+                       GridPane.valignment="BOTTOM">
                     <GridPane.margin>
                         <Insets bottom="10.0"/>
                     </GridPane.margin>
-                </TextField>
-                <DatePicker fx:id="dateOfMatch" promptText="Wybierz datę" GridPane.rowIndex="1"/>
+                </Label>
+                <Label fx:id="dateOfMatch" GridPane.rowIndex="1"/>
                 <Label alignment="TOP_CENTER" text="Białe" GridPane.halignment="CENTER" GridPane.valignment="TOP">
                     <GridPane.margin>
                         <Insets top="10.0"/>
@@ -48,20 +49,16 @@
                         <Insets top="10.0"/>
                     </GridPane.margin>
                 </Label>
+                <Label text="Wynik" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="TOP">
+                    <GridPane.margin>
+                        <Insets top="10.0"/>
+                    </GridPane.margin>
+                </Label>
                 <Label text="Data" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="TOP">
                     <GridPane.margin>
                         <Insets top="10.0"/>
                     </GridPane.margin>
                 </Label>
-                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBackButton" prefHeight="26.0"
-                        prefWidth="183.0" text="Wróć do Menu Głównego" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
-                <Button fx:id="gameSearchButton" mnemonicParsing="false" onAction="#handleSearchButton" text="Wyszukaj"
-                        textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER"
-                        GridPane.rowIndex="1" GridPane.valignment="CENTER">
-                    <font>
-                        <Font size="16.0"/>
-                    </font>
-                </Button>
             </children>
         </GridPane>
     </center>
