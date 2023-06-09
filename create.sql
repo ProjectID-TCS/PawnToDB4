@@ -97,8 +97,9 @@ CREATE INDEX player_elo ON PTDB4.elo (player_id);
 CREATE TABLE PTDB4.formats
 (
     id          serial PRIMARY KEY,
-    name        varchar(40) NOT NULL, -- some variant names are really long as they should include time of games and number of players to keep name unique or close to unique
+    name        varchar(40) NOT NULL unique, -- some variant names are really long as they should include time of games and number of players to keep name unique or close to unique
     description varchar(200)
+
 );
 
 CREATE TABLE PTDB4.cities
@@ -106,14 +107,16 @@ CREATE TABLE PTDB4.cities
     id            serial PRIMARY KEY,
     city          varchar(85) NOT NULL, --Taumatawhakatangi­hangakoauauotamatea­turipukakapikimaunga­horonukupokaiwhen­uakitanatahu (New Zealand)
     street        varchar(38),          --Jean Baptiste Point du Sable Lake Shore Drive (Chicago)
-    street_number varchar(10)           --couldn't find longer, tried though
+    street_number varchar(10),           --couldn't find longer, tried though
+    unique(city,street,street_number)
 );
 
 CREATE TABLE PTDB4.places
 (
     id      serial PRIMARY KEY,
     country varchar(56) NOT NULL, --The United Kingdom of Great Britain and Northern Ireland
-    city_id integer REFERENCES ptdb4.cities
+    city_id integer REFERENCES ptdb4.cities,
+    unique(country,city_id)
 );
 
 
@@ -125,7 +128,8 @@ CREATE TABLE PTDB4.tournaments
     place        integer REFERENCES ptdb4.places,
     "start_date" date        NOT NULL,
     "end_date"   date        NOT NULL,
-    check (start_date < end_date)
+    check (start_date < end_date),
+    unique(name,format, place,start_date,end_date)
 );
 
 CREATE OR REPLACE FUNCTION insert_tournament()
