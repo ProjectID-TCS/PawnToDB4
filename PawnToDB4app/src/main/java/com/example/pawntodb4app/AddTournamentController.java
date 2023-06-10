@@ -29,11 +29,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class AddTournamentController {
+
+    Connection con;
     private int a = 103;
     private int first=0;
     private int eloLow=1500;
     private int eloHigh=3000;
     private int graczeNum=0;
+    private int cityID;
+    private int placeID;
     VBox root;
     ObservableList<String> options;
     List<Integer> participants;
@@ -52,9 +56,10 @@ public class AddTournamentController {
 
     @FXML
     private Label graczeLabel;
-
     @FXML
     private TextField noplayersField;
+    @FXML
+    private Label noPlayersLabel;
 
     @FXML
     private TextField streetField;
@@ -86,11 +91,34 @@ public class AddTournamentController {
             showAlert("STOP","turniej musi mieć co najmniej 2 graczy");
             return;
         }
+        if (countryField == null || countryField.getText().isEmpty()) {
+            showAlert("Błąd", "Podaj kraj, w którym odbywa się turniej");
+            return;
+        }
+
+        if (cityField == null || cityField.getText().isEmpty()) {
+            showAlert("Błąd", "Podaj miasto, w którym odbywa się turniej");
+            return;
+        }
+        String res = typeCheckBox.getValue();
+        if (res == null) {
+            showAlert("Błąd", "Musisz wprowadzić format turnieju");
+            return;
+        }
         if(first==0)
         {
             first=1;
             addPlayers();
             addButton.setText("Utwórz turniej");
+            namefield.setEditable(false);
+            noplayersField.setEditable(false);
+            cityField.setEditable(false);
+            countryField.setEditable(false);
+            streetField.setEditable(false);
+            streetNrField.setEditable(false);
+            slider.setDisable(true);
+            typeCheckBox.setDisable(true);
+            noPlayersLabel.setText("Zostało do wybrania:");
         }
         else if(first ==1){
             createTournament();
@@ -122,104 +150,118 @@ public class AddTournamentController {
         int ID=0;
         //getid from db of newly added tournament
         String beginTrans = "Begin";
+        String commitTrans = "Commit";
         String cityAdder = "insert into ptdb4.cities (id,city,street,street_number) values(?,?,?,?)";
-        String cityIDGetter = "select id from ptdb4.cities where city = ? and street = ? and street_number = ?";
+
         String placeAdder = "insert into ptdb4.places (id,country, city_id) values (?,?,?)";
-        String placeIDGetter = "select id from ptdb4.places where country = ? and city_id = ?";
+
         String formatIDGetter = "select id from ptdb4.formats where name = ?";
         String tournamentAdder =
                 "insert into ptdb4.tournaments (id,name, format, place, start_date, end_date)" +
                 "values (?,?,?,?,?,?)";
         String tournamentGetter = "select id from ptdb4.tournaments where name = ? and format = ? and place = ?  and start_ date = ? and end_date = ?";
-        try (Connection con = DataBaseConfig.connect();
-             PreparedStatement transBegin = con.prepareStatement(beginTrans)) {
+        con  = DataBaseConfig.connect();
+        try {
+             PreparedStatement transBegin = con.prepareStatement(beginTrans);
             transBegin.execute();
-            PreparedStatement cityAdd = con.prepareStatement(cityAdder);
-            cityAdd.setInt(1,a);
-            cityAdd.setString(2, cityField.getText());
-            cityAdd.setString(3, streetField.getText());
-            cityAdd.setString(4, streetNrField.getText());
-            cityAdd.executeUpdate();
-            PreparedStatement cityGet = con.prepareStatement(cityIDGetter);
-            cityGet.setString(1, cityField.getText());
-            cityGet.setString(2, streetField.getText());
-            cityGet.setString(3, streetNrField.getText());
-            ResultSet cityIDResult = cityGet.executeQuery();
-            System.out.println("id miasta");
-            cityIDResult.next();
-            PreparedStatement placeAdd = con.prepareStatement(placeAdder);
-            placeAdd.setInt(1, a);
-            placeAdd.setString(2, countryField.getText());
-            placeAdd.setInt(3, cityIDResult.getInt("id"));
-            placeAdd.executeUpdate();
+            if(placeFinder() == -1){
+                if(cityFinder() == -1) {
+                    PreparedStatement cityAdd = con.prepareStatement(cityAdder);
+                    cityAdd.setInt(1, a);
+                    cityAdd.setString(2, cityField.getText());
+                    cityAdd.setString(3, streetField.getText());
+                    cityAdd.setString(4, streetNrField.getText());
+                    cityAdd.executeUpdate();
+                }
+                cityID = cityFinder();
+                PreparedStatement placeAdd = con.prepareStatement(placeAdder);
+                placeAdd.setInt(1, a);
+                placeAdd.setString(2, countryField.getText());
+                placeAdd.setInt(3, cityID);
+                placeAdd.executeUpdate();
+             }
+
+            placeID = placeFinder();
             PreparedStatement formatGet = con.prepareStatement(formatIDGetter);
             formatGet.setString(1, typeCheckBox.getValue());
             ResultSet formatIDResult = formatGet.executeQuery();
             formatIDResult.next();
-            PreparedStatement placeGet = con.prepareStatement(placeIDGetter);
-            placeGet.setString(1, countryField.getText());
-            placeGet.setInt(2, cityIDResult.getInt("id"));
-            ResultSet placeIDResult = placeGet.executeQuery();
-            placeIDResult.next();
-            System.out.println("miejsca");
             PreparedStatement tournamentAdd = con.prepareStatement(tournamentAdder);
             tournamentAdd.setInt(1,a);
             tournamentAdd.setString(2, namefield.getText());
             tournamentAdd.setInt(3, formatIDResult.getInt("id"));
-            tournamentAdd.setInt(4, placeIDResult.getInt("id"));
+            tournamentAdd.setInt(4, placeID);
             LocalDate begDate = LocalDate.of(LocalDate.now().getYear()-1, 7, 1);
             LocalDate endDate = begDate.plus(1, ChronoUnit.WEEKS);
             tournamentAdd.setDate(5,java.sql.Date.valueOf(begDate));
             tournamentAdd.setDate(6,java.sql.Date.valueOf(endDate));
             tournamentAdd.executeUpdate();
-            System.out.println("tu");
             PreparedStatement tournamentGet = con.prepareStatement(tournamentGetter);
-//            tournamentGet.setString(1, namefield.getText());
-//            tournamentGet.setString(2, typeCheckBox.getValue());
-//            tournamentGet.setInt(3, placeIDResult.getInt("id"));
-//            tournamentGet.setDate(4, java.sql.Date.valueOf(begDate));
-//            tournamentGet.setDate(5,java.sql.Date.valueOf(endDate));
-//            ResultSet tournamentIDResult = placeAdd.executeQuery();
-//            tournamentIDResult.next();
-            System.out.println("tpirnam");
-//            ID = tournamentIDResult.getInt("id");
             ID = a;
             a++;
         } catch (SQLException ex) {
             showAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
-            ex.printStackTrace();
-        }
-        finally {
-            //koniec transakcji
+            rollback();
         }
                 List<String> games = addGames(ID); //<- result;
         for(String game : games){
-            System.out.println(game);
-            Connection con = DataBaseConfig.connect();
             try {
                 PreparedStatement playerAdd = con.prepareStatement(game);
                 playerAdd.executeUpdate();
             } catch (SQLException e) {
                 showAlert("Błąd","Nie udało się dodać partii");
-                e.printStackTrace();
+                rollback();
             }
         }
-        Connection con = DataBaseConfig.connect();
-        try {
-            PreparedStatement playerAdd = con.prepareStatement("Commit");
-            playerAdd.execute();
+        try{
+            PreparedStatement committing = con.prepareStatement(commitTrans);
+            committing.execute();
         } catch (SQLException e) {
-            showAlert("Błąd","Nie udało się dodać partii");
-            e.printStackTrace();
+            showAlert("Błąd", "Coś poszło nie tak...");
+            rollback();
         }
     }
+    int placeFinder(){
+    placeID = -1;
+        String placeIDGetter = "select id from ptdb4.places where country = ? and city_id = ?";
+        try {
+            PreparedStatement cityGet = con.prepareStatement(placeIDGetter);
+            cityGet.setString(1, countryField.getText());
+            cityGet.setInt(2, cityID);
+            ResultSet cityIDResult = cityGet.executeQuery();
+            if(cityIDResult.next())
+                placeID = cityIDResult.getInt("id");
+        }
+        catch (SQLException sqlException){
+            rollback();
+        }
+    return placeID;
+    }
+    int cityFinder(){
+        cityID = -1;
+        String cityIDGetter = "select id from ptdb4.cities where city = ? and street = ? and street_number = ?";
+        try{
+            PreparedStatement cityGet = con.prepareStatement(cityIDGetter);
+            cityGet.setString(1, cityField.getText());
+            cityGet.setString(2, streetField.getText());
+            cityGet.setString(3, streetNrField.getText());
+            ResultSet cityIDResult = cityGet.executeQuery();
+            if(cityIDResult.next())
+                cityID = cityIDResult.getInt("id");
+
+        }
+        catch (SQLException sqlException){
+            rollback();
+        }
+        return cityID;
+    }
+
     List<String> addGames(int id){
         List<String> games = new ArrayList<>();
         ObservableList<HBox> tmp = ((ListView<HBox>) root.getChildren().get(1)).getItems();
         for(int i=0; i<tmp.size();i++) {
             Integer plW= pairings.get(i).getKey();
             Integer plB = pairings.get(i).getValue();
-            System.out.println(plW + " " + plB);
             String res;
             if((wyniki.get(i).getValue()).equals("White")){
                 res = "insert into ptdb4.pairings (white, black,tournament_id,result) values" +
@@ -242,10 +284,18 @@ public class AddTournamentController {
         for(int i=0;i< players.getItems().size();i++){
             CheckBox box = (CheckBox) players.getItems().get(i).getChildren().get(0);
             if(box.selectedProperty().get()) {
-                System.out.println(playerIDs.get(i));
                 participants.add(playerIDs.get(i));
                 refactorScene();
             }
+        }
+    }
+    private void rollback(){
+        String nonono = "rollback";
+        try{
+            PreparedStatement rollingBack = con.prepareStatement(nonono);
+            rollingBack.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
     private void refactorScene(){
@@ -270,16 +320,16 @@ public class AddTournamentController {
                 wyniki.add(results);
                 results.getItems().addAll(Arrays.asList("White","Draw","Black"));
                 if(x%2==1) {
-                    box.getChildren().add(new Label(playerInfos.get(playerIDs.get(i))));
+                    box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
                     box.getChildren().add(results);
-                    box.getChildren().add(new Label(playerInfos.get(playerIDs.get(j))));
-                    pairings.add(new Pair<>(playerIDs.get(i),playerIDs.get(j)));
+                    box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
+                    pairings.add(new Pair<>(participants.get(i),participants.get(j)));
                 }
                 else {
-                    box.getChildren().add(new Label(playerInfos.get(playerIDs.get(j))));
+                    box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
                     box.getChildren().add(results);
-                    box.getChildren().add(new Label(playerInfos.get(playerIDs.get(i))));
-                    pairings.add(new Pair<>(playerIDs.get(j),playerIDs.get(i)));
+                    box.getChildren().add(new Label(playerInfos.get(participants.get(j))));
+                    pairings.add(new Pair<>(participants.get(j),participants.get(i)));
                 }
                 matches.getItems().add(box);
             }
@@ -293,10 +343,9 @@ public class AddTournamentController {
         String query = "SELECT * "+
                 "FROM PTDB4.players p " +
                 "WHERE p.max_elo < ? " +
-                "and p.max_elo > ?";
-        try (Connection con = DataBaseConfig.connect();
-             PreparedStatement pst = con.prepareStatement(query)) {
-
+                "and p.max_elo > ? order by first_name, last_name";
+         try (Connection con = DataBaseConfig.connect()) {
+             PreparedStatement pst = con.prepareStatement(query);
             pst.setInt(1, eloHigh);
             pst.setInt(2, eloLow);
             int counter =0;
@@ -373,10 +422,8 @@ public class AddTournamentController {
             }
 
         } catch (SQLException ex) {
-            System.out.println("wrel");
             ex.printStackTrace();
         }
-        System.out.println(a);
     }
     private void recalculatePlayers(){
         String query = "SELECT count(*) as c "+

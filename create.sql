@@ -591,7 +591,7 @@ Pantovic	Dragan-M	13	2063
 Livaic	Leon	19	2477
 Kubicki	Piotr	6	2400
 Hoffmann	Michal	12	2500
-Szwaja	Adam	18	2480
+Szwaja	Adam	18	2480    
 \.
 
 COPY PTDB4.pairings (white, black, result, match_date) from stdin;
