@@ -57,6 +57,11 @@
                   <Insets left="20.0" top="5.0" />
                </GridPane.margin>
             </Label>
+            <TextField fx:id="countryField" layoutX="353.0" layoutY="151.0" maxWidth="100.0" promptText="Kraj" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="1" GridPane.valignment="TOP">
+               <GridPane.margin>
+                  <Insets left="10.0" top="30.0" />
+               </GridPane.margin>
+            </TextField>
             <TextField fx:id="cityField" maxWidth="100.0" promptText="Miasto" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.valignment="TOP">
                <GridPane.margin>
                   <Insets left="10.0" top="65.0" />
@@ -113,11 +118,6 @@
                   <Insets bottom="20.0" left="100.0" right="100.0" />
                </GridPane.margin>
             </Label>
-            <TextField fx:id="countryField" layoutX="353.0" layoutY="151.0" maxWidth="100.0" promptText="Kraj" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="1" GridPane.valignment="TOP">
-               <GridPane.margin>
-                  <Insets left="10.0" top="30.0" />
-               </GridPane.margin>
-            </TextField>
          </children>
       </GridPane>
    </children>

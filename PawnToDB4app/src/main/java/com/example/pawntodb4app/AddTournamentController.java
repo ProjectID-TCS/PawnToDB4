@@ -2,6 +2,8 @@ package com.example.pawntodb4app;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
@@ -407,6 +409,15 @@ public class AddTournamentController {
             eloLow = (newVal.intValue() / 10) * 10;
             eloLowLabel.setText(String.valueOf(eloLow));
             recalculatePlayers();
+        });
+        noplayersField.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue,
+                                String newValue) {
+                if (!newValue.matches("\\d*")) {
+                    noplayersField.setText(newValue.replaceAll("[^\\d]", ""));
+                }
+            }
         });
     }
     private void getID(){
