@@ -21,10 +21,15 @@ import javafx.stage.Stage;
 import javafx.util.Pair;
 import org.controlsfx.control.RangeSlider;
 
+import java.io.IOException;
 import java.sql.*;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class AddTournamentController {
+    private int a = 103;
     private int first=0;
     private int eloLow=1500;
     private int eloHigh=3000;
@@ -92,24 +97,121 @@ public class AddTournamentController {
             first =2;
             addButton.setText("Dalej");
         }
-        else{
+        else if(first ==2){
             insertToDB();
+            showSuccessAlert("Gratulacje", "Dodałeś swój pierwszy turniej!");
+            addButton.setText("Zamknij");
+            first = 3;
+        }
+        else
+        {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("mainMenu.fxml"));
+            Parent root = null;
+            try {
+                root = loader.load();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            Stage stage = (Stage) addButton.getScene().getWindow();
+            stage.setScene(new Scene(root, 320, 240));
         }
     }
 
     private void insertToDB(){
+        int ID=0;
         //getid from db of newly added tournament
         String beginTrans = "Begin";
-        String cityAdder = "insert into cities (city,street,street_number) values(?,?,?)";
-        String cityIDGetter = "select id from cities where city = ? and street = ? and street_number = ?";
-        String placeAdder = "insert into places (country, city_id) values (?,?)";
-        String placeIDGetter = "select id from places where country = ? and city_id = ?";
-
+        String cityAdder = "insert into ptdb4.cities (id,city,street,street_number) values(?,?,?,?)";
+        String cityIDGetter = "select id from ptdb4.cities where city = ? and street = ? and street_number = ?";
+        String placeAdder = "insert into ptdb4.places (id,country, city_id) values (?,?,?)";
+        String placeIDGetter = "select id from ptdb4.places where country = ? and city_id = ?";
+        String formatIDGetter = "select id from ptdb4.formats where name = ?";
         String tournamentAdder =
-                "insert into tournaments (name, format, place, start_date, end_date)" +
-                "values (?,?,?,?)";
-        String tournamentGetter = "select id from tournaments where name = ? and format = ? and place = ?  and start_ date = ? and end_date = ?";
-//        List<String> games = addGames(id); //<- result;
+                "insert into ptdb4.tournaments (id,name, format, place, start_date, end_date)" +
+                "values (?,?,?,?,?,?)";
+        String tournamentGetter = "select id from ptdb4.tournaments where name = ? and format = ? and place = ?  and start_ date = ? and end_date = ?";
+        try (Connection con = DataBaseConfig.connect();
+             PreparedStatement transBegin = con.prepareStatement(beginTrans)) {
+            transBegin.execute();
+            PreparedStatement cityAdd = con.prepareStatement(cityAdder);
+            cityAdd.setInt(1,a);
+            cityAdd.setString(2, cityField.getText());
+            cityAdd.setString(3, streetField.getText());
+            cityAdd.setString(4, streetNrField.getText());
+            cityAdd.executeUpdate();
+            PreparedStatement cityGet = con.prepareStatement(cityIDGetter);
+            cityGet.setString(1, cityField.getText());
+            cityGet.setString(2, streetField.getText());
+            cityGet.setString(3, streetNrField.getText());
+            ResultSet cityIDResult = cityGet.executeQuery();
+            System.out.println("id miasta");
+            cityIDResult.next();
+            PreparedStatement placeAdd = con.prepareStatement(placeAdder);
+            placeAdd.setInt(1, a);
+            placeAdd.setString(2, countryField.getText());
+            placeAdd.setInt(3, cityIDResult.getInt("id"));
+            placeAdd.executeUpdate();
+            PreparedStatement formatGet = con.prepareStatement(formatIDGetter);
+            formatGet.setString(1, typeCheckBox.getValue());
+            ResultSet formatIDResult = formatGet.executeQuery();
+            formatIDResult.next();
+            PreparedStatement placeGet = con.prepareStatement(placeIDGetter);
+            placeGet.setString(1, countryField.getText());
+            placeGet.setInt(2, cityIDResult.getInt("id"));
+            ResultSet placeIDResult = placeGet.executeQuery();
+            placeIDResult.next();
+            System.out.println("miejsca");
+            PreparedStatement tournamentAdd = con.prepareStatement(tournamentAdder);
+            tournamentAdd.setInt(1,a);
+            tournamentAdd.setString(2, namefield.getText());
+            tournamentAdd.setInt(3, formatIDResult.getInt("id"));
+            tournamentAdd.setInt(4, placeIDResult.getInt("id"));
+            LocalDate begDate = LocalDate.of(LocalDate.now().getYear()-1, 7, 1);
+            LocalDate endDate = begDate.plus(1, ChronoUnit.WEEKS);
+            tournamentAdd.setDate(5,java.sql.Date.valueOf(begDate));
+            tournamentAdd.setDate(6,java.sql.Date.valueOf(endDate));
+            tournamentAdd.executeUpdate();
+            System.out.println("tu");
+            PreparedStatement tournamentGet = con.prepareStatement(tournamentGetter);
+//            tournamentGet.setString(1, namefield.getText());
+//            tournamentGet.setString(2, typeCheckBox.getValue());
+//            tournamentGet.setInt(3, placeIDResult.getInt("id"));
+//            tournamentGet.setDate(4, java.sql.Date.valueOf(begDate));
+//            tournamentGet.setDate(5,java.sql.Date.valueOf(endDate));
+//            ResultSet tournamentIDResult = placeAdd.executeQuery();
+//            tournamentIDResult.next();
+            System.out.println("tpirnam");
+//            ID = tournamentIDResult.getInt("id");
+            ID = a;
+            a++;
+        } catch (SQLException ex) {
+            showAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
+            ex.printStackTrace();
+        }
+        finally {
+            //koniec transakcji
+        }
+                List<String> games = addGames(ID); //<- result;
+        for(String game : games){
+            System.out.println(game);
+            Connection con = DataBaseConfig.connect();
+            try {
+                PreparedStatement playerAdd = con.prepareStatement(game);
+                playerAdd.executeUpdate();
+            } catch (SQLException e) {
+                showAlert("Błąd","Nie udało się dodać partii");
+                e.printStackTrace();
+            }
+        }
+        Connection con = DataBaseConfig.connect();
+        try {
+            PreparedStatement playerAdd = con.prepareStatement("Commit");
+            playerAdd.execute();
+        } catch (SQLException e) {
+            showAlert("Błąd","Nie udało się dodać partii");
+            e.printStackTrace();
+        }
     }
     List<String> addGames(int id){
         List<String> games = new ArrayList<>();
@@ -121,15 +223,15 @@ public class AddTournamentController {
             String res;
             if((wyniki.get(i).getValue()).equals("White")){
                 res = "insert into ptdb4.pairings (white, black,tournament_id,result) values" +
-                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",W)";
+                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",CAST('W' AS ptdb4.match_result))";
             }
             else if((wyniki.get(i).getValue()).equals("Draw")){
                 res = "insert into ptdb4.pairings (white, black,tournament_id,result) values" +
-                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",D)";
+                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",CAST('D' AS ptdb4.match_result))";
             }
             else{
                 res = "insert into ptdb4.pairings (white, black,tournament_id,result) values" +
-                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",B)";
+                        "(" + plW.toString() + "," + plB.toString() + "," + String.valueOf(id) + ",CAST('B' AS ptdb4.match_result))";
             }
             games.add(res);
         }
@@ -245,6 +347,7 @@ public class AddTournamentController {
         sceneGrid.add(slider,0,1);
         eloLowLabel.setText("1500");
         eloHighLabel.setText("2700");
+        getID();
         slider.highValueProperty().addListener((obs,oldVal,newVal) ->
         {
             eloHigh = (newVal.intValue() / 10) * 10;
@@ -256,6 +359,24 @@ public class AddTournamentController {
             eloLowLabel.setText(String.valueOf(eloLow));
             recalculatePlayers();
         });
+    }
+    private void getID(){
+        String query = "select id from ptdb4.places order by 1 desc";
+        try (Connection con = DataBaseConfig.connect();
+             PreparedStatement pst = con.prepareStatement(query)) {
+            try (ResultSet rs = pst.executeQuery()) {
+                if(rs.next()) {
+                    a = rs.getInt("id")+7;
+                }
+                else
+                    a=100;
+            }
+
+        } catch (SQLException ex) {
+            System.out.println("wrel");
+            ex.printStackTrace();
+        }
+        System.out.println(a);
     }
     private void recalculatePlayers(){
         String query = "SELECT count(*) as c "+
@@ -297,6 +418,13 @@ public class AddTournamentController {
     }
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    private void showSuccessAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

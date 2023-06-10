@@ -128,7 +128,7 @@ CREATE TABLE PTDB4.tournaments
     place        integer REFERENCES ptdb4.places,
     "start_date" date        NOT NULL,
     "end_date"   date        NOT NULL,
-    check (start_date < end_date),
+    check (start_date <= end_date),
     unique(name,format, place,start_date,end_date)
 );
 
@@ -139,7 +139,7 @@ BEGIN
     if new.tournament_id is null then
     return new;
     end if;
-    if (select * from tournaments where id = new.tournament_id) is null then
+    if (select id from tournaments where id = new.tournament_id limit 1) is null then
         return old;
     end if;
     return new;
