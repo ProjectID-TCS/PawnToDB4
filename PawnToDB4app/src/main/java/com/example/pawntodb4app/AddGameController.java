@@ -21,7 +21,6 @@ public class AddGameController {
     String opening;
     ArrayList<String> white;
     ArrayList<String> black;
-    String record;
     String ending;
 
     ObservableList<String> result;
@@ -102,7 +101,7 @@ public class AddGameController {
         String formatted = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         //System.out.println(formatted);
         String tournament = "null";
-        int id = 0;
+        String id = "0";
         try {
             Connection con = DataBaseConfig.connect();
             if (con != null) {
@@ -122,21 +121,48 @@ public class AddGameController {
 
                 ResultSet resultSet = pst.executeQuery();
                 resultSet.next();
-                id = resultSet.getInt(1);
+                id = resultSet.getString(1);
+                System.out.println(id);
+                addExtraInformation(id, con);
+                con.commit();
             } catch (SQLException ex) {
                 showErrorAlert("Błąd", "Nie można nawiązać połączenia z bazą danych przy dodawaniu partii");
                 ex.printStackTrace();
+                return;
             }
             showSuccessAlert("Pomyslnie dodano", "Pomyślnie dodano partie do bazy danych");
-            addExtraInformation(id);
         } catch (SQLException e) {
 
         }
     }
 
-    void addExtraInformation(int id) {
-        if (opening != null) {
+    void addExtraInformation(String id, Connection con) throws SQLException {
+        String queryRecord = "select insert_record(?::int, ?, ?);";
 
+        if (opening == null || opening.isEmpty()) {
+            opening = "null";
+            if (ending == null || ending.isEmpty()) {
+                ending = "null";
+                if (white.size() == 0) return;
+            }
+        }
+        PreparedStatement pst = con.prepareStatement(queryRecord);
+        pst.setString(1, id);
+        pst.setString(2, opening);
+        pst.setString(3, ending);
+        ResultSet res = pst.executeQuery();
+        res.next();
+        String recordId = res.getString(1);
+
+        String movesQuery = "insert into PTDB4.moves_record values ( ?::int, ?::int, ?, ?);";
+
+        for (int i = 0; i < white.size(); i++) {
+            PreparedStatement pst2 = con.prepareStatement(movesQuery);
+            pst2.setString(1, recordId);
+            pst2.setInt(2, (i + 1));
+            pst2.setString(3, white.get(i));
+            pst2.setString(4, black.get(i));
+            pst2.executeUpdate();
         }
     }
 

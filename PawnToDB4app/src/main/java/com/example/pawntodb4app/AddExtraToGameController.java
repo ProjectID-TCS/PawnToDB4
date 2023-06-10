@@ -41,7 +41,7 @@ public class AddExtraToGameController {
         try {
             Connection connection = DataBaseConfig.connect();
             Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT name FROM PTDB4.opening_name");
+            ResultSet resultSet = statement.executeQuery("SELECT name FROM PTDB4.openings");
             while (resultSet.next()) {
                 String item = resultSet.getString("name");
                 options.add(item);
@@ -84,6 +84,11 @@ public class AddExtraToGameController {
                 }
             }
             rootController.setMoves(white, black);
+        }
+        String ending = endingBox.getValue();
+        if (ending == null || ending.isEmpty()) {
+            showErrorAlert("Błąd", "Ending nie może byc pusty");
+            return;
         }
         rootController.setEnding(endingBox.getValue());
         rootController.setOpeningName(openingBox.getValue());
