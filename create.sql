@@ -19,6 +19,7 @@ CREATE TABLE PTDB4.players
     max_elo integer not null
 );
 
+
 CREATE VIEW PTDB4.player_insert_view AS
 SELECT p.first_name, p.last_name, g.group_name, p.max_elo
 FROM PTDB4.players p
@@ -74,6 +75,7 @@ language plpgsql;
 CREATE TRIGGER new_player
     AFTER INSERT ON PTDB4.players
     FOR EACH ROW EXECUTE PROCEDURE new_player();
+
 CREATE OR REPLACE FUNCTION max_elo_update()
     RETURNS TRIGGER AS
 $$
@@ -115,8 +117,7 @@ CREATE TABLE PTDB4.places
 (
     id      serial PRIMARY KEY,
     country varchar(56) NOT NULL, --The United Kingdom of Great Britain and Northern Ireland
-    city_id integer REFERENCES ptdb4.cities,
-    unique(country,city_id)
+    city_id integer REFERENCES ptdb4.cities
 );
 
 
@@ -128,8 +129,7 @@ CREATE TABLE PTDB4.tournaments
     place        integer REFERENCES ptdb4.places,
     "start_date" date        NOT NULL,
     "end_date"   date        NOT NULL,
-    check (start_date <= end_date),
-    unique(name,format, place,start_date,end_date)
+    check (start_date < end_date)
 );
 
 CREATE OR REPLACE FUNCTION insert_tournament()
@@ -139,30 +139,30 @@ BEGIN
     if new.tournament_id is null then
     return new;
     end if;
-    if (select id from tournaments where id = new.tournament_id limit 1) is null then
-        return old;
+    if (select id from PTDB4.tournaments where id = new.tournament_id) is null then
+        return null;
     end if;
     return new;
 END;
 $$
 language plpgsql;
 
-
-
 CREATE TABLE PTDB4.openings
 (
-    id          serial PRIMARY KEY,
-    move_number integer    NOT NULL,
-    move_W      varchar(7) NOT NULL,
-    move_B      varchar(7) NOT NULL,
-    unique(id,move_number)
-);--no indexing, table will be relatively small
-
-CREATE TABLE PTDB4.opening_name
-(
-    id   integer references PTDB4.openings not null unique,
-    name varchar(20) NOT NULL
+    id          serial		PRIMARY KEY,
+    name	varchar(22)	NOT NULL
 );
+
+CREATE TABLE PTDB4.openings_moves
+(
+    move_number   integer       NOT NULL,
+    move_W        varchar(7)    NOT NULL,
+    move_B        varchar(7)    NOT NULL,
+    opening_id    integer       NOT NULL,
+    PRIMARY KEY (move_number, opening_id),
+    FOREIGN KEY (opening_id) REFERENCES PTDB4.openings (id)
+);
+
 
 CREATE TABLE PTDB4.game_record
 (
@@ -178,70 +178,13 @@ CREATE TABLE PTDB4.game_record
 
 CREATE TABLE PTDB4.moves_record
 (
-    id          serial PRIMARY KEY,
     game_id     integer NOT NULL REFERENCES ptdb4.game_record,
     move_number integer NOT NULL,
     move_W      varchar(7), --if there are 3 knights on the board it is possible to need 7 characters to describe one move.
-    move_B      varchar(7)  --it would be for example "Nd1xc3#". Black can be null if game ended on white move
+    move_B      varchar(7),  --it would be for example "Nd1xc3#". Black can be null if game ended on white move
+    PRIMARY KEY(game_id, move_number)
 );
-create or replace function fill_moves(id int,opening_id int)
-    returns void as
-$$
-declare
-    move record;
-BEGIN
-    for move in (select op.move_number, op.move_W, op.move_B from PTDB4.openings op where id = op.opening_id) loop
-        --todo
-        end loop;
-end;
-$$
-language plpgsql;
-create or replace function opening_chck()
-    returns trigger as
-$$
-declare
-    move_opening record;
-    move record;
-begin
-    if new.opening is not null then -- opening
-    for move_opening in select move_number, move_W,move_B from PTDB4.openings o where id = new.opening loop
-        if (select move_W, move_B from ptdb4.moves_record where game_id = new.id) is not null then
-            select mr.move_W, mr.move_B from ptdb4.moves_record mr where game_id = new.id and mr.move_number = move_opening.move_number into move;
-            if move.move_b <> move_opening.move_b or move.move_w <> move_opening.move_w then
-                new.opening := null;
-                return new;
-            end if;
-        else
-            if move_opening.move_number = 1 then
-            select fill_moves(new.id,new.opening);
-            return new;
-            else
-                new.opening := null;
-                return new;
-            end if;
-        end if;
-        end loop;
-    end if;
-    return new;
-end;
-$$
-language plpgsql;
 
-create trigger opening_chck
-    before insert or update on PTDB4.game_record
-    for each row execute procedure opening_chck();
-create or replace function moves_chck()
-    returns trigger as
-$$BEGIN
-
-    return new;
-end;
-$$
-language plpgsql;
-
-create or replace trigger moves_chck
-    before insert or update on PTDB4.moves_record
-    for each row execute procedure moves_chck();
 
 CREATE INDEX each_game ON PTDB4.moves_record (game_id);
 
@@ -252,8 +195,9 @@ CREATE TABLE PTDB4.pairings
     black         integer      NOT NULL REFERENCES ptdb4.players,
     tournament_id integer REFERENCES ptdb4.tournaments,
     "result"      PTDB4.match_result NOT NULL,
-    match_date    date,
-    id_record     integer REFERENCES ptdb4.game_record
+    match_date    date not null,
+    id_record     integer REFERENCES ptdb4.game_record,
+    unique(white,black,match_date)
 );
 
 CREATE VIEW PTDB4.match_insert_view AS
@@ -385,6 +329,26 @@ CREATE TRIGGER elo_update
     FOR EACH ROW EXECUTE PROCEDURE elo_update();
     
     
+CREATE OR REPLACE FUNCTION check_date()
+RETURNS TRIGGER AS $$
+BEGIN
+    if old.match_date is not null then
+        return OLD;
+    end if;
+
+    IF new.match_date IS NULL THEN
+        new.match_date = current_date;
+    END IF;
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER check_date_befor_insert 
+BEFORE INSERT OR UPDATE ON PTDB4.pairings
+FOR EACH ROW EXECUTE PROCEDURE check_date();
+
+    
 CREATE OR REPLACE FUNCTION current_elo(id_elo INTEGER)
     RETURNS INT AS
 $$
@@ -412,6 +376,50 @@ CREATE TABLE PTDB4.player_tournament
     player_id     integer NOT NULL REFERENCES ptdb4.players,
     tournament_id integer NOT NULL REFERENCES ptdb4.tournaments
 );
+
+
+--FUNKCJA ADAMA
+
+CREATE OR REPLACE FUNCTION insert_match(w_first varchar, W_last varchar, b_first varchar,
+b_last varchar , result PTDB4.match_result,
+match_date date, tournament_id integer)
+RETURNS INTEGER AS $$
+DECLARE
+    res INTEGER;
+    white_id integer;
+    black_id integer;
+BEGIN
+SELECT id INTO white_id FROM PTDB4.players WHERE first_name = w_first and last_name = w_last;
+   SELECT id INTO black_id FROM PTDB4.players WHERE first_name = b_first and last_name = b_last;
+
+   INSERT INTO PTDB4.pairings (white, black, tournament_id, result, match_date)
+   VALUES (white_id, black_id, tournament_id, result, match_date)
+   RETURNING id INTO res;
+   RETURN res;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION insert_record(pairing_id integer, g_opening varchar, g_ending varchar)
+RETURNS INTEGER AS $$
+DECLARE
+    g_result PTDB4.match_result;
+    g_id INTEGER;
+BEGIN
+   SELECT result INTO g_result FROM PTDB4.pairings WHERE id = pairing_id;
+   SELECT max(id) INTO g_id FROM PTDB4.game_record;
+   g_id = g_id + 1;
+   
+   INSERT INTO PTDB4.game_record (id, game_result, ending, opening)
+   VALUES (g_id, g_result, g_ending, (select o.id from PTDB4.openings o where name = g_opening));
+
+   UPDATE PTDB4.pairings
+   SET id_record = g_id
+   WHERE id = pairing_id;
+   
+   RETURN g_id;
+END;
+$$ LANGUAGE plpgsql;
 
 
 
@@ -591,322 +599,311 @@ Pantovic	Dragan-M	13	2063
 Livaic	Leon	19	2477
 Kubicki	Piotr	6	2400
 Hoffmann	Michal	12	2500
-Szwaja	Adam	18	2480    
+Szwaja	Adam	18	2480
 \.
 
 COPY PTDB4.pairings (white, black, result, match_date) from stdin;
-24	29	W	2021-09-25
-93	116	D	2021-09-25
-89	36	W	2021-09-25
-124	42	B	2021-09-25
-26	113	W	2021-09-25
-4	104	D	2021-09-25
-57	24	D	2021-09-26
-108	100	B	2021-09-26
-1	12	D	2021-09-26
-82	27	B	2021-09-26
-81	5	W	2021-09-26
-83	96	W	2021-09-26
-39	134	D	2021-09-26
-61	147	W	2021-09-26
-83	89	W	2021-09-27
-121	24	B	2021-09-27
-103	44	B	2021-09-27
-41	81	D	2021-09-27
-114	16	D	2021-09-27
-39	67	W	2021-09-27
-32	91	W	2021-09-27
-45	96	D	2021-09-27
-30	84	W	2021-09-27
-35	25	D	2021-09-27
-81	99	B	2021-09-28
-6	146	B	2021-09-28
-105	76	B	2021-09-28
-26	77	D	2021-09-28
-63	70	W	2021-09-28
-5	83	B	2021-09-29
-51	126	D	2021-09-29
-121	130	W	2021-09-29
-148	137	W	2021-09-29
-138	45	W	2021-09-29
-149	111	D	2021-09-29
-147	56	W	2021-09-30
-2	62	B	2021-09-30
-35	32	W	2021-09-30
-20	67	D	2021-09-30
-22	96	B	2021-09-30
-88	19	W	2021-09-30
-129	61	B	2021-09-30
-46	95	W	2021-10-11
-39	91	W	2021-10-11
-122	51	W	2021-10-11
-109	65	D	2021-10-11
-88	111	W	2021-10-11
-75	129	B	2021-10-12
-24	94	B	2021-10-12
-65	33	B	2021-10-13
-57	80	W	2021-10-13
-36	99	B	2021-10-13
-74	78	W	2021-10-13
-15	45	B	2021-10-13
-14	140	D	2021-10-14
-19	136	B	2021-10-14
-119	100	B	2021-10-14
-124	82	B	2021-10-14
-147	122	B	2021-10-14
-67	46	W	2021-10-15
-60	126	B	2021-11-20
-118	76	W	2021-11-20
-79	115	B	2021-11-20
-44	86	D	2021-11-20
-102	19	W	2021-11-20
-18	71	W	2021-11-20
-109	90	W	2021-11-21
-148	142	B	2021-11-21
-107	104	B	2021-11-21
-63	92	W	2021-11-21
-112	95	D	2021-11-21
-93	105	D	2021-11-21
-14	17	W	2021-11-21
-127	17	D	2021-11-22
-36	13	B	2021-11-22
-19	120	W	2021-11-22
-137	11	W	2021-11-22
-39	37	B	2021-11-22
-40	111	B	2021-11-22
-104	53	D	2021-11-23
-40	4	D	2021-11-23
-132	135	B	2021-11-23
-127	94	B	2021-11-23
-63	62	D	2021-11-23
-27	49	W	2021-11-23
-27	1	D	2021-11-24
-137	49	D	2021-11-24
-85	25	W	2021-11-24
-90	62	D	2021-11-24
-16	5	B	2021-11-24
-13	26	B	2021-11-25
-11	98	D	2021-11-25
-19	142	D	2021-11-25
-68	61	D	2021-11-25
-143	95	B	2021-11-25
-76	112	B	2021-11-25
-134	76	D	2021-11-26
-96	11	B	2021-11-26
-77	27	D	2021-11-26
-124	73	W	2021-11-26
-150	114	D	2021-11-26
-81	31	W	2021-11-26
-7	34	W	2021-11-26
-20	77	D	2021-11-27
-81	73	W	2021-11-27
-111	22	B	2021-11-27
-87	44	D	2021-11-27
-112	144	W	2021-11-27
-126	21	D	2021-11-27
-30	137	D	2021-11-27
-94	79	W	2021-11-27
-120	110	D	2021-11-27
-83	73	W	2021-11-28
-141	4	D	2021-11-28
-33	37	W	2021-11-28
-103	147	B	2021-11-28
-57	32	D	2021-11-28
-67	116	D	2021-11-28
-48	50	B	2021-11-28
-128	95	D	2021-11-29
-114	100	B	2022-01-01
-140	109	W	2022-01-01
-9	7	B	2022-01-01
-97	41	D	2022-01-01
-95	148	D	2022-01-01
-112	9	D	2022-01-02
-101	13	W	2022-01-02
-67	121	D	2022-01-02
-118	3	D	2022-01-02
-95	69	W	2022-01-03
-141	144	D	2022-01-03
-21	2	D	2022-01-03
-36	41	W	2022-01-03
-129	18	D	2022-01-03
-77	84	W	2022-01-04
-87	116	W	2022-01-04
-137	86	B	2022-01-04
-66	2	D	2022-01-04
-68	1	B	2022-01-04
-34	71	D	2022-01-04
-76	53	B	2022-01-04
-84	9	D	2022-01-05
-89	24	D	2022-01-05
-83	15	B	2022-01-06
-106	31	B	2022-01-06
-131	119	W	2022-01-06
-22	2	D	2022-01-06
-149	145	W	2022-01-06
-53	52	B	2022-01-06
-19	130	B	2022-01-10
-143	42	W	2022-01-10
-96	119	W	2022-01-10
-149	141	W	2022-01-10
-113	129	D	2022-01-10
-34	93	D	2022-01-11
-87	116	B	2022-01-11
-65	132	D	2022-01-11
-36	121	W	2022-01-11
-131	72	W	2022-01-11
-58	129	B	2022-01-12
-54	120	B	2022-01-12
-124	150	B	2022-01-12
-103	13	B	2022-01-12
-21	101	D	2022-01-12
-33	16	D	2022-01-12
-38	69	D	2022-01-13
-82	100	W	2022-01-13
-64	81	W	2022-01-13
-52	28	D	2022-01-13
-111	146	D	2022-01-13
-47	86	D	2022-01-13
-142	51	B	2022-01-14
-70	24	W	2022-01-14
-101	128	B	2022-01-14
-76	13	D	2022-01-14
-80	125	D	2022-01-14
-124	102	D	2022-01-14
-36	131	B	2022-01-14
-45	75	D	2022-01-15
-111	129	W	2022-03-15
-92	43	W	2022-03-15
-16	96	D	2022-03-15
-120	116	D	2022-03-15
-20	70	D	2022-03-16
-28	57	D	2022-03-16
-9	108	B	2022-03-16
-33	42	D	2022-03-16
-112	56	W	2022-03-16
-76	25	D	2022-03-17
-18	33	W	2022-03-17
-142	74	W	2022-03-17
-13	30	W	2022-03-17
-29	97	B	2022-03-17
-70	145	D	2022-03-17
-46	3	B	2022-03-18
-12	68	B	2022-03-18
-93	24	B	2022-03-18
-67	19	W	2022-03-18
-2	72	B	2022-03-18
-128	95	D	2022-03-19
-4	86	D	2022-03-19
-81	62	B	2022-03-19
-121	59	B	2022-03-19
-116	97	W	2022-03-19
-78	32	W	2022-03-19
-53	125	B	2022-03-19
-82	56	B	2022-03-19
-116	117	W	2022-03-20
-56	124	B	2022-03-20
-63	137	B	2022-04-11
-70	85	D	2022-04-11
-79	104	B	2022-04-11
-93	86	D	2022-04-11
-24	105	B	2022-04-11
-46	130	W	2022-04-12
-120	83	W	2022-04-12
-29	145	D	2022-04-12
-35	149	D	2022-04-12
-54	139	W	2022-04-12
-100	139	W	2022-04-12
-141	9	D	2022-04-13
-16	66	W	2022-04-13
-49	139	B	2022-04-13
-70	130	W	2022-04-13
-72	11	W	2022-04-13
-76	6	D	2022-04-13
-69	11	W	2022-04-13
-67	108	D	2022-04-14
-147	73	W	2022-04-14
-80	20	B	2022-04-14
-33	95	W	2022-04-14
-37	77	W	2022-04-14
-4	133	B	2022-04-14
-98	80	W	2022-04-14
-78	10	D	2022-04-14
-11	124	D	2022-04-15
-26	89	D	2022-04-15
-34	136	D	2022-04-15
-86	125	B	2022-04-15
-129	50	W	2022-06-15
-137	31	B	2022-06-15
-104	9	D	2022-06-15
-136	19	B	2022-06-15
-61	125	D	2022-06-15
-53	88	W	2022-06-16
-126	131	B	2022-06-16
-8	31	W	2022-06-16
-112	25	W	2022-06-16
-51	118	W	2022-06-16
-8	114	W	2022-06-17
-101	56	W	2022-06-17
-32	120	B	2022-06-17
-120	80	D	2022-06-17
-43	86	W	2022-06-17
-69	73	D	2022-06-18
-149	31	D	2022-06-18
-24	94	D	2022-06-18
-133	84	B	2022-06-18
-146	3	D	2022-06-18
-86	81	B	2022-06-18
-146	88	W	2022-06-19
-51	143	W	2022-06-19
-84	8	D	2022-06-19
-18	92	W	2022-06-19
-123	55	D	2022-06-19
-46	80	D	2022-06-19
-85	15	B	2022-06-20
-109	23	B	2022-06-20
-79	15	W	2022-06-20
-129	9	D	2022-06-20
-110	25	B	2022-06-21
-30	38	B	2022-06-21
-96	80	D	2022-06-21
-68	97	B	2022-06-21
-20	86	B	2022-06-21
-88	99	W	2022-06-22
-118	3	D	2022-06-22
-73	59	D	2022-06-22
-101	132	W	2022-06-22
-33	10	B	2022-06-22
-88	109	B	2022-06-23
-17	107	D	2022-06-23
-33	103	D	2022-06-23
-102	128	B	2022-06-23
-36	120	D	2022-06-23
-79	11	D	2022-06-24
-129	126	W	2022-06-24
-3	106	D	2022-06-24
-103	33	B	2022-06-24
-79	91	B	2022-06-24
-57	103	W	2022-06-24
-53	78	D	2022-06-24
-75	45	W	2022-06-25
-88	147	D	2022-06-25
-46	63	W	2022-06-25
-83	43	W	2022-06-25
-21	144	W	2022-06-25
-54	103	D	2022-06-26
-28	31	B	2022-06-26
+24	29	W	2021-01-01
+93	116	D	2021-01-02
+89	36	W	2021-01-03
+124	42	B	2021-01-04
+26	113	W	2021-01-05
+4	104	D	2021-01-06
+57	24	D	2021-01-07
+108	100	B	2021-01-08
+1	12	D	2021-01-09
+82	27	B	2021-01-10
+81	5	W	2021-01-11
+83	96	W	2021-01-12
+39	134	D	2021-01-13
+61	147	W	2021-01-14
+83	89	W	2021-01-15
+121	24	B	2021-01-16
+103	44	B	2021-01-17
+41	81	D	2021-01-18
+114	16	D	2021-01-19
+39	67	W	2021-01-20
+32	91	W	2021-01-21
+45	96	D	2021-01-22
+30	84	W	2021-01-23
+35	25	D	2021-01-24
+81	99	B	2021-01-25
+6	148	B	2021-01-26
+105	76	B	2021-01-27
+26	77	D	2021-01-28
+63	70	W	2021-02-01
+5	83	B	2021-02-02
+51	126	D	2021-02-03
+121	130	W	2021-02-04
+148	137	W	2021-02-05
+138	45	W	2021-02-06
+149	111	D	2021-02-07
+148	56	W	2021-02-08
+2	62	B	2021-02-09
+35	32	W	2021-02-10
+20	67	D	2021-02-11
+22	96	B	2021-02-12
+88	19	W	2021-02-13
+130	61	B	2021-02-14
+46	96	W	2021-02-15
+39	91	W	2021-02-16
+122	51	W	2021-02-17
+109	65	D	2021-02-18
+88	111	W	2021-02-19
+75	129	B	2021-02-20
+24	94	B	2021-02-21
+65	33	B	2021-02-22
+57	80	W	2021-02-23
+36	99	B	2021-02-24
+74	78	W	2021-02-25
+15	45	B	2021-02-26
+14	140	D	2021-02-27
+19	136	B	2021-02-28
+119	100	B	2021-03-01
+124	82	B	2021-03-02
+147	122	B	2021-03-03
+67	46	W	2021-03-04
+60	126	B	2021-03-05
+118	76	W	2021-03-06
+79	115	B	2021-03-07
+44	86	D	2021-03-08
+102	19	W	2021-03-09
+18	71	W	2021-03-10
+109	90	W	2021-03-11
+148	142	B	2021-03-12
+107	104	B	2021-03-13
+63	92	W	2021-03-14
+112	95	D	2021-03-15
+93	105	D	2021-03-16
+14	17	W	2021-03-17
+127	17	D	2021-03-18
+36	13	B	2021-03-19
+19	120	W	2021-03-20
+137	11	W	2021-03-21
+39	37	B	2021-03-22
+40	111	B	2021-03-23
+104	53	D	2021-03-24
+40	4	D	2021-03-25
+132	135	B	2021-03-26
+127	94	B	2021-03-27
+63	62	D	2021-03-28
+27	49	W	2021-04-01
+27	1	D	2021-04-02
+137	49	D	2021-04-03
+85	25	W	2021-04-04
+90	62	D	2021-04-05
+16	5	B	2021-04-06
+13	26	B	2021-04-07
+11	98	D	2021-04-08
+19	142	D	2021-04-09
+68	61	D	2021-04-10
+143	95	B	2021-04-11
+76	112	B	2021-04-12
+134	76	D	2021-04-13
+96	11	B	2021-04-14
+77	27	D	2021-04-15
+124	73	W	2021-04-16
+150	114	D	2021-04-17
+81	31	W	2021-04-18
+7	34	W	2021-04-19
+20	77	D	2021-04-20
+81	73	W	2021-04-21
+111	22	B	2021-04-22
+87	44	D	2021-04-23
+112	144	W	2021-04-24
+126	21	D	2021-04-25
+30	137	D	2021-04-26
+94	79	W	2021-04-27
+120	110	D	2021-04-28
+83	73	W	2021-05-01
+141	4	D	2021-05-02
+33	37	W	2021-05-03
+103	147	B	2021-05-04
+57	32	D	2021-05-05
+67	116	D	2021-05-06
+48	50	B	2021-05-07
+128	95	D	2021-05-08
+114	100	B	2021-05-09
+140	109	W	2021-05-10
+9	7	B	2021-05-11
+97	41	D	2021-05-12
+95	148	D	2021-05-13
+112	9	D	2021-05-14
+101	13	W	2021-05-15
+67	121	D	2021-05-16
+118	3	D	2021-05-17
+95	69	W	2021-05-18
+141	144	D	2021-05-19
+21	2	D	2021-05-20
+36	41	W	2021-05-21
+129	18	D	2021-05-22
+77	84	W	2021-05-23
+87	116	W	2021-05-24
+137	86	B	2021-05-25
+66	2	D	2021-05-26
+68	1	B	2021-05-27
+34	71	D	2021-05-28
+76	53	B	2021-06-01
+84	9	D	2021-06-02
+89	24	D	2021-06-03
+83	15	B	2021-06-04
+106	31	B	2021-06-05
+131	119	W	2021-06-06
+22	2	D	2021-06-07
+149	145	W	2021-06-08
+53	52	B	2021-06-09
+19	130	B	2021-06-10
+143	42	W	2021-06-11
+96	119	W	2021-06-12
+149	141	W	2021-06-13
+113	129	D	2021-06-14
+34	93	D	2021-06-15
+87	116	B	2021-06-16
+65	132	D	2021-06-17
+36	121	W	2021-06-18
+131	72	W	2021-06-19
+58	129	B	2021-06-20
+54	120	B	2021-06-21
+124	150	B	2021-06-22
+103	13	B	2021-06-23
+21	101	D	2021-06-24
+33	16	D	2021-06-25
+38	69	D	2021-06-26
+82	100	W	2021-06-27
+64	81	W	2021-06-28
+52	28	D	2021-07-01
+111	146	D	2021-07-02
+47	86	D	2021-07-03
+142	51	B	2021-07-04
+70	24	W	2021-07-05
+101	128	B	2021-07-06
+76	13	D	2021-07-07
+80	125	D	2021-07-08
+124	101	D	2021-07-09
+36	131	B	2021-07-10
+45	75	D	2021-07-11
+111	129	W	2021-07-12
+92	43	W	2021-07-13
+16	96	D	2021-07-14
+120	116	D	2021-07-15
+20	70	D	2021-07-16
+28	57	D	2021-07-17
+9	108	B	2021-07-18
+33	42	D	2021-07-19
+112	56	W	2021-07-20
+76	25	D	2021-07-21
+18	33	W	2021-07-22
+142	74	W	2021-07-23
+13	30	W	2021-07-24
+30	97	B	2021-07-25
+70	145	D	2021-07-26
+46	3	B	2021-07-27
+12	68	B	2021-07-28
+93	24	B	2021-08-01
+68	19	W	2021-08-02
+2	72	B	2021-08-03
+128	95	D	2021-08-04
+4	86	D	2021-08-05
+81	62	B	2021-08-06
+121	59	B	2021-08-07
+116	97	W	2021-08-08
+78	32	W	2021-08-09
+53	125	B	2021-08-10
+82	56	B	2021-08-11
+116	117	W	2021-08-12
+56	124	B	2021-08-13
+63	137	B	2021-08-14
+70	86	D	2021-08-15
+79	104	B	2021-08-16
+94	86	D	2021-08-17
+24	105	B	2021-08-18
+46	130	W	2021-08-19
+120	83	W	2021-08-20
+29	145	D	2021-08-21
+35	149	D	2021-08-22
+54	139	W	2021-08-23
+100	139	W	2021-08-24
+141	9	D	2021-08-25
+16	66	W	2021-08-26
+49	139	B	2021-08-27
+70	130	W	2021-08-28
+72	11	W	2021-09-01
+76	6	D	2021-09-02
+69	11	W	2021-09-03
+67	108	D	2021-09-04
+147	73	W	2021-09-05
+80	20	B	2021-09-06
+33	95	W	2021-09-07
+37	77	W	2021-09-08
+4	133	B	2021-09-09
+98	80	W	2021-09-10
+78	10	D	2021-09-11
+11	124	D	2021-09-12
+26	89	D	2021-09-13
+34	136	D	2021-09-14
+86	125	B	2021-09-15
+129	50	W	2021-09-16
+137	31	B	2021-09-17
+104	9	D	2021-09-18
+136	19	B	2021-09-19
+61	125	D	2021-09-20
+53	88	W	2021-09-21
+126	131	B	2021-09-22
+8	31	W	2021-09-23
+112	25	W	2021-09-24
+51	118	W	2021-09-25
+8	114	W	2021-09-26
+101	56	W	2021-09-27
+32	120	B	2021-09-28
+120	80	D	2021-10-01
+43	86	W	2021-10-02
+69	73	D	2021-10-03
+149	31	D	2021-10-04
+24	94	D	2021-10-05
+133	84	B	2021-10-06
+146	3	D	2021-10-07
+86	81	B	2021-10-08
+146	88	W	2021-10-09
+51	143	W	2021-10-10
+84	8	D	2021-10-11
+18	92	W	2021-10-12
+123	55	D	2021-10-13
+46	80	D	2021-10-14
+85	15	B	2021-10-15
+109	23	B	2021-10-16
+79	15	W	2021-10-17
+129	9	D	2021-10-18
+110	25	B	2021-10-19
+30	38	B	2021-10-20
+96	80	D	2021-10-21
+68	97	B	2021-10-22
+20	86	B	2021-10-23
+88	99	W	2021-10-24
+118	3	D	2021-10-25
+73	59	D	2021-10-26
+101	132	W	2021-10-27
+33	10	B	2021-10-28
+88	109	B	2021-11-01
+17	107	D	2021-11-02
+33	103	D	2021-11-03
+102	128	B	2021-11-04
+36	120	D	2021-11-05
+79	11	D	2021-11-06
+129	126	W	2021-11-07
+3	106	D	2021-11-08
+103	33	B	2021-11-09
+79	91	B	2021-11-10
+57	103	W	2021-11-11
+53	78	D	2021-11-12
+75	45	W	2021-11-13
+88	147	D	2021-11-14
+46	63	W	2021-11-15
+83	43	W	2021-11-16
+21	144	W	2021-11-17
+54	103	D	2021-11-18
+28	31	B	2021-11-19
+28	31	B	2021-11-20
 \.
-
--- COPY PTDB4.move_record (id, record) from stdin;
--- 1	1. f4 d5 2. Nf3 g6 3. g3 Bg7 4. Bg2 Nf6 5. O-O O-O 6. d3 c5 7. c3 Nc6 8. Na3 Rb8 9. Ne5 Nxe5 10. fxe5 Ne8
--- 2	1. e4 h5 2. h4 g6 3. d4 Bg7 4. Nc3 d6 5. Be3 a6 6. Qd2 b5 7. f3 Nd7 8. Nh3 Bb7 9. O-O-O Rc8 10. Ng5 c5
--- 3	1. e4 c5 2. Nf3 d6 3. d4 Nf6 4. dxc5 Qa5+ 5. Nc3 Qxc5 6. Be3 Qa5 7. Qd2 Nc6 8. h3 g6 9. Bd3 Bg7 10. O-O O-O
--- 4	1. d4 Nf6 2. c4 e6 3. Bg5 Be7 4. Nf3 d5 5. Nc3 O-O 6. e3 Nbd7 7. Qc2 c5 8. Rd1 cxd4 9. exd4 b6 10. Bd3 dxc4
--- 5	1. b3 e5 2. Bb2 Nc6 3. e3 Nf6 4. c4 Be7 5. Nf3 e4 6. Nd4 Nxd4 7. Bxd4 O-O 8. Nc3 c5 9. Be5 d6 10. Bg3 Bf5
--- 6	1. e4 c6 2. Nf3 g6 3. d3 Bg7 4. Nbd2 e5 5. c3 d5 6. Be2 Ne7 7. O-O O-O 8. Re1 h6 9. Bf1 Qc7 10. Qe2 d4
--- 7	1. c4 f5 2. Nc3 Nf6 3. e4 fxe4 4. d3 e5 5. dxe4 Bb4 6. Bd3 Bxc3+ 7. bxc3 d6 8. Ne2 Nbd7 9. O-O Nc5 10. f4 O-O
--- 8	1. d4 Nf6 2. c4 c5 3. d5 b5 4. Nf3 e6 5. Bg5 exd5 6. cxd5 d6 7. e4 a6 8. a4 Be7 9. Bxf6 Bxf6 10. axb5 Bxb2
--- 9	1. d4 f5 2. c4 Nf6 3. g3 e6 4. Bg2 Be7 5. Nf3 O-O 6. O-O Ne4 7. Nbd2 Bf6 8. Qc2 d5 9. b3 c5 10. cxd5 exd5
--- \.
 
 COPY PTDB4.game_record (id, game_result,ending) from stdin;
 1	W	resignation
@@ -938,27 +935,29 @@ COPY PTDB4.formats (id, name) FROM stdin;
 5	Scheveningen System
 \.
 
-COPY PTDB4.openings (id,move_number, move_W,move_B) FROM stdin;
-1	1	e4	Nf6
-2	1	d4	Nf6
-3	1	d4	e5
-4	1	e4	d5
-5	1	e4	c5
-6	1	e4	e6
-7	1	g3	d5
-8	1	d4	d5
+COPY PTDB4.openings (name) FROM stdin;
+"Alekhine Defence"
+"Indian Defence"
+"Englund Gambit"
+"Scandinavian Defence"
+"Sicilian Defence"
+"French Defence"
+"Hungarian Defence"
+"Queens Pawn Game"
 \.
 
-COPY PTDB4.opening_name (id, name) FROM stdin;
-1	Alekhine Defence
-2	Indian Defence
-3	Englund Gambit
-4	Scandinavian Defence
-5	Sicilian Defence
-6	French Defence
-7	Hungarian Defence
-8	Queens Pawn Game
+
+COPY PTDB4.openings_moves (move_number, move_W, move_B, opening_id) FROM stdin;
+1	e4	Nf6	1
+1	d4	Nf6	2
+1	d4	e5	3
+1	e4	d5	4
+1	e4	c5	5
+1	e4	e6	6
+1	g3	d5	7
+1	d4	d5	8
 \.
+
 
 COPY PTDB4.cities (id, city, street, street_number) FROM stdin;
 1	Krakow	Lojasiewicza	6
@@ -974,7 +973,6 @@ COPY PTDB4.places (id, country, city_id) FROM stdin;
 4	United States	4
 5	Austria	5
 \.
-
 
 
 COPY PTDB4.tournaments (id, name, format, place, start_date, end_date) FROM stdin;
@@ -998,3 +996,12 @@ COPY PTDB4.pairing_tournament (pairing_id, tournament_id) FROM stdin;
 155	2
 48	2
 \.
+
+CREATE OR REPLACE FUNCTION new_player()
+    RETURNS TRIGGER AS
+$$BEGIN
+    insert into PTDB4.elo values (new.id,now(),new.max_elo);
+    return new;
+end;
+$$
+language plpgsql;

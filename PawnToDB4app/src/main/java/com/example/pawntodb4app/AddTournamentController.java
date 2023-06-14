@@ -164,6 +164,7 @@ public class AddTournamentController {
         String tournamentGetter = "select id from ptdb4.tournaments where name = ? and format = ? and place = ?  and start_ date = ? and end_date = ?";
         con  = DataBaseConfig.connect();
         try {
+        con.setAutoCommit(false);
              PreparedStatement transBegin = con.prepareStatement(beginTrans);
             transBegin.execute();
             if(placeFinder() == -1){
@@ -202,6 +203,7 @@ public class AddTournamentController {
             ID = a;
             a++;
         } catch (SQLException ex) {
+            ex.printStackTrace();
             showAlert("Błąd", "Nie można nawiązać połączenia z bazą danych");
             rollback();
         }
@@ -211,14 +213,17 @@ public class AddTournamentController {
                 PreparedStatement playerAdd = con.prepareStatement(game);
                 playerAdd.executeUpdate();
             } catch (SQLException e) {
+                e.printStackTrace();
                 showAlert("Błąd","Nie udało się dodać partii");
                 rollback();
             }
         }
         try{
-            PreparedStatement committing = con.prepareStatement(commitTrans);
-            committing.execute();
+//            PreparedStatement committing = con.prepareStatement(commitTrans);
+            con.commit();
+//            committing.execute();
         } catch (SQLException e) {
+            e.printStackTrace();
             showAlert("Błąd", "Coś poszło nie tak...");
             rollback();
         }
@@ -235,6 +240,7 @@ public class AddTournamentController {
                 placeID = cityIDResult.getInt("id");
         }
         catch (SQLException sqlException){
+            sqlException.printStackTrace();
             rollback();
         }
     return placeID;
@@ -253,6 +259,7 @@ public class AddTournamentController {
 
         }
         catch (SQLException sqlException){
+            sqlException.printStackTrace();
             rollback();
         }
         return cityID;
@@ -297,6 +304,7 @@ public class AddTournamentController {
             PreparedStatement rollingBack = con.prepareStatement(nonono);
             rollingBack.execute();
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -324,13 +332,13 @@ public class AddTournamentController {
                 if(x%2==1) {
                     box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
                     box.getChildren().add(results);
-                    box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
+                    box.getChildren().add(new Label(playerInfos.get(participants.get(j))));
                     pairings.add(new Pair<>(participants.get(i),participants.get(j)));
                 }
                 else {
-                    box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
-                    box.getChildren().add(results);
                     box.getChildren().add(new Label(playerInfos.get(participants.get(j))));
+                    box.getChildren().add(results);
+                    box.getChildren().add(new Label(playerInfos.get(participants.get(i))));
                     pairings.add(new Pair<>(participants.get(j),participants.get(i)));
                 }
                 matches.getItems().add(box);

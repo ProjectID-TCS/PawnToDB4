@@ -120,27 +120,30 @@ public class SearchGameController {
                 return;
             }
 
-            String gameRecordId = pi.getString(3);
-
-            String query = "select o.name, gr.ending, gr.game_result  from ptdb4.game_record gr " +
-                    "join ptdb4.openings o on o.id = gr.opening where gr.id = ?::int;";
-            PreparedStatement pst3 = con.prepareStatement(query);
-            pst3.setString(1, gameRecordId);
-            ResultSet set = pst3.executeQuery();
-            set.next();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("gameSearchDetails.fxml"));
             Parent root = loader.load();
             GameSearchDetailsController controller = loader.getController();
 
             controller.setPlayers(firstNameW, lastNameW, firstNameB, lastNameB, date);
-            String r = set.getString(3);
+            String r = pi.getString(2);
             String result;
             if (r.equals("W")) result = "Wygrana białych";
             else if (r.equals("B")) result = "Wygrana czarnych";
             else result = "Remis";
-            controller.setGameInformation(set.getString(1),
-                    set.getString(2), result);
-            controller.setGameRecordTxt(getRecord(gameRecordId, con));
+
+            String gameRecordId = pi.getString(3);
+            if(gameRecordId != "null") {
+                String query = "select o.name, gr.ending, gr.game_result  from ptdb4.game_record gr " +
+                        "join ptdb4.openings o on o.id = gr.opening where gr.id = ?::int;";
+                PreparedStatement pst3 = con.prepareStatement(query);
+                pst3.setString(1, gameRecordId);
+                ResultSet set = pst3.executeQuery();
+                if(set.next()) {
+                    controller.setGameInformation(set.getString(1),
+                            set.getString(2), result);
+                    controller.setGameRecordTxt(getRecord(gameRecordId, con));
+                }
+            }
             //controller.setMatch(new Match(pi.getString(1), pi.getString(2),
             //pi.getString(3), pi.getString(4), date));
             Stage stage = new Stage();
